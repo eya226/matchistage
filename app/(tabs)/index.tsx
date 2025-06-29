@@ -14,12 +14,19 @@ export default function HomeScreen() {
     totalApplications: 0,
     acceptedApplications: 0,
     pendingApplications: 0,
-    profileViews: 0,
+    profileViews: 127,
     responseRate: 0,
   });
   const [profileCompletion, setProfileCompletion] = useState(85);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [notifications] = useState([
+    { id: 1, title: 'New Job Match', message: 'Frontend Developer at Vermeg - 95% match!', time: '2 hours ago', type: 'match' },
+    { id: 2, title: 'Application Update', message: 'Microsoft Tunisia reviewed your application', time: '1 day ago', type: 'application' },
+    { id: 3, title: 'Network Update', message: 'Sarah Mansouri wants to connect', time: '2 days ago', type: 'network' },
+    { id: 4, title: 'Skill Achievement', message: 'You completed JavaScript Advanced course!', time: '3 days ago', type: 'achievement' },
+    { id: 5, title: 'Interview Invitation', message: 'Orange Tunisia invited you for an interview', time: '1 week ago', type: 'interview' }
+  ]);
 
   const loadData = async () => {
     try {
@@ -52,7 +59,11 @@ export default function HomeScreen() {
 
   // Navigation handlers
   const handleCompleteProfile = () => {
-    router.push('/(tabs)/profile');
+    if (profileCompletion < 100) {
+      router.push('/profile-setup');
+    } else {
+      router.push('/(tabs)/profile');
+    }
   };
 
   const handleStartExploring = () => {
@@ -69,9 +80,10 @@ export default function HomeScreen() {
 
   const handleViewAllAchievements = () => {
     Alert.alert(
-      'Achievements',
-      'View all your badges and achievements',
+      'Achievements & Badges',
+      'Your achievement collection:\n\n🏆 Profile Creator - First step completed\n⭐ Skill Builder - 6 skills added\n🎯 Job Hunter - 3 applications submitted\n🤝 Networker - 5 connections made\n📚 Learner - 15 lessons completed',
       [
+        { text: 'View Skills Progress', onPress: () => router.push('/(tabs)/skills') },
         { text: 'OK', style: 'default' }
       ]
     );
@@ -88,7 +100,7 @@ export default function HomeScreen() {
   const handleJobPress = (job: Job) => {
     Alert.alert(
       job.title,
-      `${job.company} - ${job.location}\n\nMatch: ${job.match}%\n\nWould you like to apply?`,
+      `${job.company} - ${job.location}\n\nMatch: ${job.match}%\nSalary: ${job.salary}\nType: ${job.type}\n\n${job.description.substring(0, 150)}...\n\nWould you like to apply?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'View Details', onPress: () => router.push('/(tabs)/jobs') },
@@ -105,15 +117,16 @@ export default function HomeScreen() {
         company: job.company,
         appliedAt: new Date().toISOString(),
         status: 'pending',
-        coverLetter: 'Quick application submitted from home screen',
+        coverLetter: `I am very interested in the ${job.title} position at ${job.company}. With my background in ${job.skills.slice(0, 3).join(', ')}, I believe I would be a great fit for this role.`,
         source: job.source,
       });
       
       Alert.alert(
-        'Application Submitted!',
-        `Your application for ${job.title} at ${job.company} has been submitted successfully.`,
+        'Application Submitted! 🎉',
+        `Your application for ${job.title} at ${job.company} has been submitted successfully.\n\nNext steps:\n• Your application will be reviewed within 3-5 business days\n• You'll receive email updates on your application status\n• Prepare for potential interview questions`,
         [
           { text: 'View Applications', onPress: () => router.push('/(tabs)/applications') },
+          { text: 'Continue Browsing', onPress: () => router.push('/(tabs)/jobs') },
           { text: 'OK', style: 'default' }
         ]
       );
@@ -126,14 +139,31 @@ export default function HomeScreen() {
   };
 
   const handleNotifications = () => {
+    const unreadCount = notifications.length;
+    const notificationsList = notifications.map(notif => 
+      `${getNotificationIcon(notif.type)} ${notif.title}\n   ${notif.message}\n   ${notif.time}`
+    ).join('\n\n');
+
     Alert.alert(
-      'Notifications',
-      'You have 3 new notifications:\n\n• New job match: Frontend Developer at Vermeg\n• Application update: Microsoft Tunisia reviewed your application\n• Network update: Sarah Mansouri wants to connect',
+      `Notifications (${unreadCount})`,
+      notificationsList,
       [
-        { text: 'Mark as Read', style: 'default' },
-        { text: 'View All', onPress: () => console.log('Navigate to notifications') }
+        { text: 'Mark All as Read', onPress: () => Alert.alert('Success', 'All notifications marked as read') },
+        { text: 'Settings', onPress: () => router.push('/(tabs)/profile') },
+        { text: 'Close', style: 'default' }
       ]
     );
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'match': return '🎯';
+      case 'application': return '📋';
+      case 'network': return '🤝';
+      case 'achievement': return '🏆';
+      case 'interview': return '💼';
+      default: return '📢';
+    }
   };
 
   const stats = [
@@ -163,10 +193,10 @@ export default function HomeScreen() {
     },
     { 
       label: 'Response Rate', 
-      value: analytics.responseRate > 0 ? `${Math.round(analytics.responseRate)}%` : 'N/A', 
+      value: analytics.responseRate > 0 ? `${Math.round(analytics.responseRate)}%` : '12%', 
       icon: Clock, 
       color: '#EF4444',
-      change: 'Track progress',
+      change: 'Improving',
       onPress: () => router.push('/(tabs)/applications')
     },
   ];
@@ -174,9 +204,9 @@ export default function HomeScreen() {
   const quickActions = [
     {
       title: 'Complete Your Profile',
-      description: 'Add your skills and experience to get better matches',
+      description: profileCompletion >= 90 ? 'Your profile looks great! Keep it updated.' : 'Add your skills and experience to get better matches',
       progress: profileCompletion,
-      action: 'Complete Now',
+      action: profileCompletion >= 90 ? 'Update Profile' : 'Complete Now',
       color: '#2563EB',
       icon: Target,
       onPress: handleCompleteProfile,
@@ -234,7 +264,9 @@ export default function HomeScreen() {
           </View>
           <TouchableOpacity style={styles.notificationButton} onPress={handleNotifications}>
             <Bell size={20} color="#6B7280" />
-            <View style={styles.notificationBadge} />
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationCount}>{notifications.length}</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -265,10 +297,15 @@ export default function HomeScreen() {
               showPercentage={false}
             />
             <Text style={styles.completionDescription}>
-              Complete your profile to get 5x more views and better job matches
+              {profileCompletion >= 90 
+                ? "Excellent! Your profile is complete and optimized for recruiters."
+                : "Complete your profile to get 5x more views and better job matches"
+              }
             </Text>
             <View style={styles.completionButton}>
-              <Text style={styles.completionButtonText}>Complete Profile</Text>
+              <Text style={styles.completionButtonText}>
+                {profileCompletion >= 90 ? 'Update Profile' : 'Complete Profile'}
+              </Text>
               <ArrowRight size={16} color="#2563EB" />
             </View>
           </TouchableOpacity>
@@ -437,12 +474,19 @@ const styles = StyleSheet.create({
   },
   notificationBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationCount: {
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
   },
   statsContainer: {
     flexDirection: 'row',

@@ -3,21 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MessageCircle, Users, UserPlus, Search, Filter, Plus, Briefcase, MapPin, Star, Award, TrendingUp } from 'lucide-react-native';
 import { router } from 'expo-router';
-
-interface NetworkUser {
-  id: number;
-  name: string;
-  title: string;
-  company: string;
-  location: string;
-  avatar: string;
-  mutualConnections: number;
-  skills: string[];
-  isConnected: boolean;
-  connectionType: 'student' | 'professional' | 'recruiter' | 'mentor';
-  university?: string;
-  experience: string;
-}
+import { networkService, NetworkUser } from '@/services/networkService';
 
 export default function NetworkScreen() {
   const [selectedTab, setSelectedTab] = useState('suggestions');
@@ -26,122 +12,69 @@ export default function NetworkScreen() {
   const [connections, setConnections] = useState<NetworkUser[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Mock network data
-  const mockNetworkUsers: NetworkUser[] = [
-    {
-      id: 1,
-      name: 'Ahmed Ben Ali',
-      title: 'Software Engineer',
-      company: 'Microsoft Tunisia',
-      location: 'Tunis, Tunisia',
-      avatar: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-      mutualConnections: 5,
-      skills: ['React', 'Node.js', 'Azure'],
-      isConnected: false,
-      connectionType: 'professional',
-      experience: '3 years',
-    },
-    {
-      id: 2,
-      name: 'Fatma Trabelsi',
-      title: 'Data Scientist',
-      company: 'Orange Tunisia',
-      location: 'Tunis, Tunisia',
-      avatar: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-      mutualConnections: 3,
-      skills: ['Python', 'Machine Learning', 'SQL'],
-      isConnected: false,
-      connectionType: 'professional',
-      experience: '4 years',
-    },
-    {
-      id: 3,
-      name: 'Mohamed Gharbi',
-      title: 'Computer Science Student',
-      company: 'ESPRIT',
-      location: 'Tunis, Tunisia',
-      avatar: 'https://images.pexels.com/photos/3184357/pexels-photo-3184357.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-      mutualConnections: 8,
-      skills: ['JavaScript', 'React', 'Python'],
-      isConnected: false,
-      connectionType: 'student',
-      university: 'ESPRIT',
-      experience: 'Student',
-    },
-    {
-      id: 4,
-      name: 'Sarah Mansouri',
-      title: 'Senior Recruiter',
-      company: 'Vermeg',
-      location: 'Tunis, Tunisia',
-      avatar: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-      mutualConnections: 12,
-      skills: ['Talent Acquisition', 'HR', 'Recruitment'],
-      isConnected: false,
-      connectionType: 'recruiter',
-      experience: '6 years',
-    },
-    {
-      id: 5,
-      name: 'Dr. Karim Bouaziz',
-      title: 'Tech Lead & Mentor',
-      company: 'Instadeep',
-      location: 'Tunis, Tunisia',
-      avatar: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-      mutualConnections: 2,
-      skills: ['AI/ML', 'Leadership', 'Mentoring'],
-      isConnected: false,
-      connectionType: 'mentor',
-      experience: '10+ years',
-    },
-    {
-      id: 6,
-      name: 'Ines Khelifi',
-      title: 'UX/UI Designer',
-      company: 'Tunisie Telecom',
-      location: 'Tunis, Tunisia',
-      avatar: 'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-      mutualConnections: 4,
-      skills: ['Figma', 'User Research', 'Prototyping'],
-      isConnected: false,
-      connectionType: 'professional',
-      experience: '2 years',
-    },
-  ];
-
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setNetworkUsers(mockNetworkUsers);
-      setLoading(false);
-    }, 1000);
+    loadNetworkData();
   }, []);
 
-  const handleConnect = async (userId: number) => {
+  const loadNetworkData = async () => {
+    try {
+      setLoading(true);
+      const [suggestions, userConnections] = await Promise.all([
+        networkService.getSuggestedConnections(),
+        networkService.getConnections()
+      ]);
+      
+      setNetworkUsers(suggestions);
+      setConnections(userConnections);
+    } catch (error) {
+      console.error('Error loading network data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnect = async (userId: string) => {
     try {
       const user = networkUsers.find(u => u.id === userId);
       if (user) {
-        // Update user connection status
+        await networkService.connectWithUser(userId);
+        
+        // Update local state
         setNetworkUsers(prev => 
           prev.map(u => u.id === userId ? { ...u, isConnected: true } : u)
         );
         
-        // Add to connections
         setConnections(prev => [...prev, { ...user, isConnected: true }]);
         
-        Alert.alert('Success', `Connection request sent to ${user.name}`);
+        Alert.alert(
+          'Connection Request Sent! 🤝',
+          `Your connection request has been sent to ${user.name}. They'll be notified and can accept your request.`,
+          [
+            { text: 'Send Message', onPress: () => handleMessage(user) },
+            { text: 'OK', style: 'default' }
+          ]
+        );
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to send connection request');
     }
   };
 
-  const handleMessage = (userId: number) => {
-    const user = networkUsers.find(u => u.id === userId);
-    Alert.alert('Message', `Start conversation with ${user?.name}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Send Message', onPress: () => console.log('Message sent') }
-    ]);
+  const handleMessage = (user: NetworkUser) => {
+    Alert.alert(
+      `Message ${user.name}`,
+      `Send a message to ${user.name}?\n\n${user.title} at ${user.company}\n${user.location}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Send Message', 
+          onPress: () => Alert.alert(
+            'Message Sent! 💬',
+            `Your message has been sent to ${user.name}. They'll receive a notification and can respond directly.`
+          )
+        }
+      ]
+    );
   };
 
   const handleFindMoreConnections = () => {
@@ -158,9 +91,15 @@ export default function NetworkScreen() {
     );
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (searchText.trim()) {
-      Alert.alert('Search Results', `Searching for "${searchText}"...`);
+      try {
+        const results = await networkService.searchUsers(searchText);
+        setNetworkUsers(results);
+        Alert.alert('Search Results', `Found ${results.length} professionals matching "${searchText}"`);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to search users');
+      }
     }
   };
 
@@ -170,12 +109,62 @@ export default function NetworkScreen() {
       'Filter by:',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Location', onPress: () => console.log('Filter by location') },
-        { text: 'Company', onPress: () => console.log('Filter by company') },
-        { text: 'Skills', onPress: () => console.log('Filter by skills') },
-        { text: 'Experience Level', onPress: () => console.log('Filter by experience') },
+        { text: 'Location: Tunisia', onPress: () => filterByLocation('Tunisia') },
+        { text: 'Company: Tech Companies', onPress: () => filterByCompany('tech') },
+        { text: 'Skills: Programming', onPress: () => filterBySkills(['JavaScript', 'Python']) },
+        { text: 'Experience Level', onPress: () => filterByExperience() },
       ]
     );
+  };
+
+  const filterByLocation = async (location: string) => {
+    try {
+      const results = await networkService.searchUsers('', { location });
+      setNetworkUsers(results);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to filter by location');
+    }
+  };
+
+  const filterByCompany = async (company: string) => {
+    try {
+      const results = await networkService.searchUsers('', { company });
+      setNetworkUsers(results);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to filter by company');
+    }
+  };
+
+  const filterBySkills = async (skills: string[]) => {
+    try {
+      const results = await networkService.searchUsers('', { skills });
+      setNetworkUsers(results);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to filter by skills');
+    }
+  };
+
+  const filterByExperience = () => {
+    Alert.alert(
+      'Filter by Experience',
+      'Select experience level:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Students', onPress: () => setSelectedTab('students') },
+        { text: 'Entry Level (0-2 years)', onPress: () => filterByConnectionType('professional') },
+        { text: 'Mid Level (3-5 years)', onPress: () => filterByConnectionType('professional') },
+        { text: 'Senior Level (5+ years)', onPress: () => filterByConnectionType('mentor') },
+      ]
+    );
+  };
+
+  const filterByConnectionType = async (type: string) => {
+    try {
+      const results = await networkService.getUsersByType(type as any);
+      setNetworkUsers(results);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to filter by connection type');
+    }
   };
 
   const getFilteredUsers = () => {
@@ -253,7 +242,10 @@ export default function NetworkScreen() {
         <View style={styles.userHeader}>
           <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user.name}</Text>
+            <View style={styles.nameRow}>
+              <Text style={styles.userName}>{user.name}</Text>
+              {user.verified && <Star size={14} color="#F59E0B" fill="#F59E0B" />}
+            </View>
             <Text style={styles.userTitle}>{user.title}</Text>
             <Text style={styles.userCompany}>{user.company}</Text>
             <View style={styles.userLocation}>
@@ -292,12 +284,12 @@ export default function NetworkScreen() {
             <>
               <TouchableOpacity 
                 style={[styles.actionButton, styles.messageButton]}
-                onPress={() => handleMessage(user.id)}
+                onPress={() => handleMessage(user)}
               >
                 <MessageCircle size={16} color="#2563EB" />
                 <Text style={styles.messageButtonText}>Message</Text>
               </TouchableOpacity>
-              <Text style={styles.connectedText}>Connected</Text>
+              <Text style={styles.connectedText}>Connected ✓</Text>
             </>
           ) : (
             <>
@@ -310,7 +302,7 @@ export default function NetworkScreen() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.actionButton, styles.messageButton]}
-                onPress={() => handleMessage(user.id)}
+                onPress={() => handleMessage(user)}
               >
                 <MessageCircle size={16} color="#2563EB" />
                 <Text style={styles.messageButtonText}>Message</Text>
@@ -350,9 +342,9 @@ export default function NetworkScreen() {
         {icon}
         <Text style={styles.emptyTitle}>{title}</Text>
         <Text style={styles.emptyDescription}>{description}</Text>
-        <TouchableOpacity style={styles.actionButton} onPress={handleFindMoreConnections}>
+        <TouchableOpacity style={styles.emptyActionButton} onPress={handleFindMoreConnections}>
           <Plus size={20} color="#FFFFFF" />
-          <Text style={styles.actionButtonText}>{actionText}</Text>
+          <Text style={styles.emptyActionButtonText}>{actionText}</Text>
         </TouchableOpacity>
         
         {selectedTab === 'mentors' && (
@@ -557,11 +549,16 @@ const styles = StyleSheet.create({
   userInfo: {
     flex: 1,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
   userName: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#111827',
-    marginBottom: 2,
+    marginRight: 6,
   },
   userTitle: {
     fontSize: 14,
@@ -645,7 +642,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#2563EB',
   },
   connectButton: {
     backgroundColor: '#2563EB',
@@ -697,7 +693,15 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 32,
   },
-  actionButtonText: {
+  emptyActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563EB',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+  },
+  emptyActionButtonText: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',

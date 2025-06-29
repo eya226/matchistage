@@ -1,72 +1,146 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { TrendingUp, Briefcase, Target, Award, Clock, MapPin, Bell } from 'lucide-react-native';
+import { TrendingUp, Briefcase, Target, Award, Clock, MapPin, Bell, Plus, ArrowRight, Eye } from 'lucide-react-native';
+import { dataService, Job } from '@/services/dataService';
+import ProgressBar from '@/components/ProgressBar';
+import Badge from '@/components/Badge';
+import MatchIndicator from '@/components/MatchIndicator';
 
 export default function HomeScreen() {
+  const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
+  const [analytics, setAnalytics] = useState({
+    totalApplications: 0,
+    acceptedApplications: 0,
+    pendingApplications: 0,
+    profileViews: 0,
+    responseRate: 0,
+  });
+  const [profileCompletion, setProfileCompletion] = useState(15);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    try {
+      const [jobs, analyticsData, profile] = await Promise.all([
+        dataService.getJobs(),
+        dataService.getAnalytics(),
+        dataService.getUserProfile(),
+      ]);
+      
+      // Get top 3 recommended jobs
+      setRecommendedJobs(jobs.slice(0, 3));
+      setAnalytics(analyticsData);
+      setProfileCompletion(profile.profileCompletion);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   const stats = [
-    { label: 'Active Applications', value: '0', icon: Briefcase, color: '#2563EB' },
-    { label: 'Skill Match', value: '0%', icon: Target, color: '#10B981' },
-    { label: 'Achievements', value: '0', icon: Award, color: '#F59E0B' },
-    { label: 'Response Rate', value: 'N/A', icon: Clock, color: '#EF4444' },
+    { 
+      label: 'Active Applications', 
+      value: analytics.totalApplications.toString(), 
+      icon: Briefcase, 
+      color: '#2563EB',
+      change: '+2 this week'
+    },
+    { 
+      label: 'Profile Views', 
+      value: analytics.profileViews.toString(), 
+      icon: Eye, 
+      color: '#10B981',
+      change: '+15 this week'
+    },
+    { 
+      label: 'Match Rate', 
+      value: '85%', 
+      icon: Target, 
+      color: '#F59E0B',
+      change: '+5% this month'
+    },
+    { 
+      label: 'Response Rate', 
+      value: analytics.responseRate > 0 ? `${Math.round(analytics.responseRate)}%` : 'N/A', 
+      icon: Clock, 
+      color: '#EF4444',
+      change: 'Track progress'
+    },
   ];
 
   const quickActions = [
     {
       title: 'Complete Your Profile',
       description: 'Add your skills and experience to get better matches',
-      progress: 25,
+      progress: profileCompletion,
       action: 'Complete Now',
       color: '#2563EB',
+      icon: Target,
     },
     {
-      title: 'Discover Internships',
-      description: 'Start swiping through curated opportunities',
+      title: 'Discover New Opportunities',
+      description: 'Browse through curated internships matching your skills',
       progress: 0,
       action: 'Start Exploring',
       color: '#10B981',
+      icon: TrendingUp,
     },
     {
       title: 'Build Your Network',
-      description: 'Connect with industry professionals',
+      description: 'Connect with industry professionals and mentors',
       progress: 0,
       action: 'Start Networking',
       color: '#F59E0B',
+      icon: Award,
     },
   ];
 
-  const featuredOpportunities = [
-    {
-      id: 1,
-      title: 'Frontend Developer Intern',
-      company: 'TechCorp Tunisia',
-      location: 'Tunis, Tunisia',
-      type: 'Internship',
-      logo: 'https://images.pexels.com/photos/6615068/pexels-photo-6615068.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-      featured: true,
-    },
-    {
-      id: 2,
-      title: 'Data Science Intern',
-      company: 'Innovation Labs',
-      location: 'Sfax, Tunisia',
-      type: 'Internship',
-      logo: 'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-      featured: true,
-    },
+  const achievements = [
+    { type: 'achievement' as const, title: 'First Step', description: 'Profile created', earned: true },
+    { type: 'skill' as const, title: 'Skill Builder', description: 'Add 5 skills', earned: false },
+    { type: 'milestone' as const, title: 'Applicant', description: 'First application', earned: false },
+    { type: 'social' as const, title: 'Networker', description: 'Make connections', earned: false },
   ];
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading your dashboard...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Welcome to MatchiStage! 👋</Text>
-            <Text style={styles.subtitle}>Let's start building your career</Text>
+            <Text style={styles.greeting}>Welcome back! 👋</Text>
+            <Text style={styles.subtitle}>Ready to find your next opportunity?</Text>
           </View>
           <TouchableOpacity style={styles.notificationButton}>
             <Bell size={20} color="#6B7280" />
+            <View style={styles.notificationBadge} />
           </TouchableOpacity>
         </View>
 
@@ -75,32 +149,64 @@ export default function HomeScreen() {
           {stats.map((stat, index) => (
             <TouchableOpacity key={index} style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: `${stat.color}15` }]}>
-                <stat.icon size={20} color={stat.color} />
+                <stat.icon size={18} color={stat.color} />
               </View>
               <Text style={styles.statValue}>{stat.value}</Text>
               <Text style={styles.statLabel}>{stat.label}</Text>
+              <Text style={styles.statChange}>{stat.change}</Text>
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* Profile Completion */}
+        <View style={styles.section}>
+          <View style={styles.completionCard}>
+            <View style={styles.completionHeader}>
+              <Text style={styles.completionTitle}>Profile Strength</Text>
+              <MatchIndicator percentage={profileCompletion} size={50} />
+            </View>
+            <ProgressBar 
+              progress={profileCompletion} 
+              color="#2563EB"
+              showPercentage={false}
+            />
+            <Text style={styles.completionDescription}>
+              Complete your profile to get 5x more views and better job matches
+            </Text>
+            <TouchableOpacity style={styles.completionButton}>
+              <Text style={styles.completionButtonText}>Complete Profile</Text>
+              <ArrowRight size={16} color="#2563EB" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Quick Actions */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Get Started</Text>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
           </View>
           
           {quickActions.map((action, index) => (
             <View key={index} style={styles.actionCard}>
-              <View style={styles.actionContent}>
-                <Text style={styles.actionTitle}>{action.title}</Text>
-                <Text style={styles.actionDescription}>{action.description}</Text>
-                <View style={styles.progressContainer}>
-                  <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${action.progress}%`, backgroundColor: action.color }]} />
-                  </View>
-                  <Text style={styles.progressText}>{action.progress}% complete</Text>
+              <View style={styles.actionHeader}>
+                <View style={[styles.actionIcon, { backgroundColor: `${action.color}15` }]}>
+                  <action.icon size={20} color={action.color} />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionTitle}>{action.title}</Text>
+                  <Text style={styles.actionDescription}>{action.description}</Text>
                 </View>
               </View>
+              {action.progress > 0 && (
+                <View style={styles.actionProgress}>
+                  <ProgressBar 
+                    progress={action.progress} 
+                    color={action.color}
+                    height={6}
+                    showPercentage={true}
+                  />
+                </View>
+              )}
               <TouchableOpacity style={[styles.actionButton, { backgroundColor: action.color }]}>
                 <Text style={styles.actionButtonText}>{action.action}</Text>
               </TouchableOpacity>
@@ -108,67 +214,83 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* Featured Opportunities */}
+        {/* Recommended Jobs */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Featured Opportunities</Text>
+            <Text style={styles.sectionTitle}>Recommended for You</Text>
             <TouchableOpacity>
               <Text style={styles.seeAll}>View All</Text>
             </TouchableOpacity>
           </View>
           
-          {featuredOpportunities.map((opportunity) => (
-            <TouchableOpacity key={opportunity.id} style={styles.opportunityCard}>
-              <Image source={{ uri: opportunity.logo }} style={styles.companyLogo} />
-              <View style={styles.opportunityInfo}>
-                <View style={styles.opportunityHeader}>
-                  <Text style={styles.opportunityTitle}>{opportunity.title}</Text>
-                  <View style={styles.featuredBadge}>
-                    <Text style={styles.featuredText}>Featured</Text>
+          {recommendedJobs.map((job) => (
+            <TouchableOpacity key={job.id} style={styles.jobCard}>
+              <View style={styles.jobHeader}>
+                <Image source={{ uri: job.logo }} style={styles.companyLogo} />
+                <View style={styles.jobInfo}>
+                  <Text style={styles.jobTitle}>{job.title}</Text>
+                  <Text style={styles.companyName}>{job.company}</Text>
+                  <View style={styles.jobMeta}>
+                    <MapPin size={12} color="#6B7280" />
+                    <Text style={styles.jobLocation}>{job.location}</Text>
+                    <Text style={styles.jobType}>• {job.type}</Text>
                   </View>
                 </View>
-                <Text style={styles.companyName}>{opportunity.company}</Text>
-                <View style={styles.opportunityMeta}>
-                  <MapPin size={14} color="#6B7280" />
-                  <Text style={styles.opportunityLocation}>{opportunity.location}</Text>
-                  <Text style={styles.opportunityType}>• {opportunity.type}</Text>
-                </View>
+                <MatchIndicator percentage={job.match} size={40} />
+              </View>
+              
+              <View style={styles.jobSkills}>
+                {job.skills.slice(0, 3).map((skill, idx) => (
+                  <View key={idx} style={styles.skillChip}>
+                    <Text style={styles.skillText}>{skill}</Text>
+                  </View>
+                ))}
+                {job.skills.length > 3 && (
+                  <Text style={styles.moreSkills}>+{job.skills.length - 3}</Text>
+                )}
+              </View>
+
+              <View style={styles.jobActions}>
+                <TouchableOpacity style={styles.quickApplyButton}>
+                  <Text style={styles.quickApplyText}>Quick Apply</Text>
+                </TouchableOpacity>
+                <Text style={styles.postedTime}>{job.postedTime}</Text>
               </View>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Learning Resources */}
+        {/* Achievements */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Career Resources</Text>
+            <Text style={styles.sectionTitle}>Your Achievements</Text>
             <TouchableOpacity>
-              <TrendingUp size={20} color="#2563EB" />
+              <Text style={styles.seeAll}>View All</Text>
             </TouchableOpacity>
           </View>
           
-          <View style={styles.resourcesGrid}>
-            <TouchableOpacity style={styles.resourceCard}>
-              <Text style={styles.resourceIcon}>📝</Text>
-              <Text style={styles.resourceTitle}>Resume Tips</Text>
-              <Text style={styles.resourceDescription}>Learn how to write a compelling resume</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.resourceCard}>
-              <Text style={styles.resourceIcon}>💼</Text>
-              <Text style={styles.resourceTitle}>Interview Prep</Text>
-              <Text style={styles.resourceDescription}>Ace your next interview with confidence</Text>
-            </TouchableOpacity>
+          <View style={styles.achievementsGrid}>
+            {achievements.map((achievement, index) => (
+              <Badge
+                key={index}
+                type={achievement.type}
+                title={achievement.title}
+                description={achievement.description}
+                earned={achievement.earned}
+                size="medium"
+              />
+            ))}
           </View>
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>Start Job Search</Text>
+            <Text style={styles.primaryButtonText}>Discover Jobs</Text>
+            <ArrowRight size={20} color="#FFFFFF" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Complete Profile</Text>
+            <Text style={styles.secondaryButtonText}>Update Profile</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -180,6 +302,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
   },
   header: {
     flexDirection: 'row',
@@ -207,6 +339,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -218,9 +360,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
-    marginHorizontal: 4,
+    marginHorizontal: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -228,24 +370,31 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: 'Inter-Bold',
     color: '#111827',
   },
   statLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
     textAlign: 'center',
     marginTop: 2,
+  },
+  statChange: {
+    fontSize: 8,
+    fontFamily: 'Inter-Regular',
+    color: '#10B981',
+    marginTop: 2,
+    textAlign: 'center',
   },
   section: {
     paddingHorizontal: 20,
@@ -267,6 +416,48 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#2563EB',
   },
+  completionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  completionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  completionTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+  },
+  completionDescription: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  completionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EBF4FF',
+    borderRadius: 8,
+    paddingVertical: 10,
+  },
+  completionButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#2563EB',
+    marginRight: 6,
+  },
   actionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
@@ -278,8 +469,21 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  actionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
   actionContent: {
-    marginBottom: 16,
+    flex: 1,
   },
   actionTitle: {
     fontSize: 16,
@@ -291,28 +495,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
+  },
+  actionProgress: {
     marginBottom: 12,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
-    color: '#6B7280',
   },
   actionButton: {
     borderRadius: 8,
@@ -325,18 +510,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
-  opportunityCard: {
+  jobCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
+  },
+  jobHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   companyLogo: {
     width: 48,
@@ -344,97 +532,104 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 12,
   },
-  opportunityInfo: {
+  jobInfo: {
     flex: 1,
   },
-  opportunityHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  opportunityTitle: {
+  jobTitle: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#111827',
-    flex: 1,
-  },
-  featuredBadge: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  featuredText: {
-    fontSize: 10,
-    fontFamily: 'Inter-SemiBold',
-    color: '#D97706',
   },
   companyName: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
-    marginBottom: 4,
+    marginTop: 2,
   },
-  opportunityMeta: {
+  jobMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 4,
   },
-  opportunityLocation: {
+  jobLocation: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
     marginLeft: 4,
   },
-  opportunityType: {
+  jobType: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
     marginLeft: 8,
   },
-  resourcesGrid: {
+  jobSkills: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 12,
   },
-  resourceCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+  skillChip: {
+    backgroundColor: '#EBF4FF',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  skillText: {
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+    color: '#2563EB',
+  },
+  moreSkills: {
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    alignSelf: 'center',
+  },
+  jobActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  resourceIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+  quickApplyButton: {
+    backgroundColor: '#2563EB',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
-  resourceTitle: {
-    fontSize: 14,
+  quickApplyText: {
+    fontSize: 12,
     fontFamily: 'Inter-SemiBold',
-    color: '#111827',
-    marginBottom: 4,
-    textAlign: 'center',
+    color: '#FFFFFF',
   },
-  resourceDescription: {
+  postedTime: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#6B7280',
-    textAlign: 'center',
+    color: '#9CA3AF',
+  },
+  achievementsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
   actionButtons: {
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
   primaryButton: {
+    flexDirection: 'row',
     backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
   },
   primaryButtonText: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
+    marginRight: 8,
   },
   secondaryButton: {
     backgroundColor: '#FFFFFF',

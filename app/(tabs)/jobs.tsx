@@ -1,124 +1,61 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Image, TouchableOpacity, Animated, PanResponder } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Dimensions, Image, TouchableOpacity, Animated, PanResponder, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Clock, DollarSign, Heart, X, ArrowUp, Briefcase, Users, Star, ExternalLink } from 'lucide-react-native';
+import { MapPin, Clock, DollarSign, Heart, X, ArrowUp, Briefcase, Users, Star, ExternalLink, Bookmark, Filter, Wifi, WifiOff } from 'lucide-react-native';
+import { dataService, Job } from '@/services/dataService';
+import { storageService } from '@/services/storageService';
+import QuickApplyModal from '@/components/QuickApplyModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_HEIGHT = SCREEN_HEIGHT * 0.7;
 
 export default function JobsScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
+  const [showQuickApply, setShowQuickApply] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [lowDataMode, setLowDataMode] = useState(false);
+  
   const position = useRef(new Animated.ValueXY()).current;
   const rotation = useRef(new Animated.Value(0)).current;
 
-  // Real internship opportunities from various platforms
-  const jobs = [
-    {
-      id: 1,
-      title: 'Software Engineering Intern',
-      company: 'Microsoft Tunisia',
-      location: 'Tunis, Tunisia',
-      salary: '1500-2000 TND',
-      type: 'Summer Internship',
-      duration: '3 months',
-      match: 95,
-      logo: 'https://images.pexels.com/photos/6615068/pexels-photo-6615068.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-      banner: 'https://images.pexels.com/photos/3182773/pexels-photo-3182773.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&fit=crop',
-      postedTime: '2 hours ago',
-      skills: ['React', 'TypeScript', 'Node.js', 'Azure'],
-      benefits: ['Health Insurance', 'Flexible Hours', 'Mentorship', 'Full-time Offer Potential'],
-      description: 'Join our engineering team to work on cutting-edge cloud solutions. You\'ll collaborate with senior engineers on real projects that impact millions of users.',
-      teamSize: '50-100',
-      rating: 4.8,
-      source: 'LinkedIn',
-      requirements: ['Computer Science student', '3rd year or above', 'Strong programming skills'],
-      applicationDeadline: 'March 15, 2024',
-    },
-    {
-      id: 2,
-      title: 'Data Science Intern',
-      company: 'Orange Tunisia',
-      location: 'Tunis, Tunisia',
-      salary: '1200-1800 TND',
-      type: 'Research Internship',
-      duration: '6 months',
-      match: 87,
-      logo: 'https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-      banner: 'https://images.pexels.com/photos/3182755/pexels-photo-3182755.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&fit=crop',
-      postedTime: '4 hours ago',
-      skills: ['Python', 'Machine Learning', 'SQL', 'Tableau'],
-      benefits: ['Training Programs', 'Industry Exposure', 'Research Publications'],
-      description: 'Work with our data science team to analyze customer behavior and develop predictive models for telecommunications.',
-      teamSize: '10-25',
-      rating: 4.6,
-      source: 'Indeed',
-      requirements: ['Statistics/Data Science background', 'Python proficiency', 'Final year student'],
-      applicationDeadline: 'March 20, 2024',
-    },
-    {
-      id: 3,
-      title: 'Frontend Developer Intern',
-      company: 'Vermeg',
-      location: 'Tunis, Tunisia',
-      salary: '1000-1500 TND',
-      type: 'Technical Internship',
-      duration: '4 months',
-      match: 82,
-      logo: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-      banner: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&fit=crop',
-      postedTime: '1 day ago',
-      skills: ['Vue.js', 'JavaScript', 'CSS', 'Git'],
-      benefits: ['Continuous Learning', 'Performance Bonus', 'Flexible Schedule'],
-      description: 'Join our fintech team to build modern web applications for financial services. Great opportunity to learn industry best practices.',
-      teamSize: '25-50',
-      rating: 4.4,
-      source: 'Glassdoor',
-      requirements: ['Web development knowledge', 'Portfolio required', 'Available full-time'],
-      applicationDeadline: 'March 25, 2024',
-    },
-    {
-      id: 4,
-      title: 'Mobile App Development Intern',
-      company: 'Expensya',
-      location: 'Tunis, Tunisia',
-      salary: '1300-1700 TND',
-      type: 'Product Internship',
-      duration: '5 months',
-      match: 78,
-      logo: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-      banner: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&fit=crop',
-      postedTime: '2 days ago',
-      skills: ['React Native', 'Flutter', 'Firebase', 'REST APIs'],
-      benefits: ['Startup Environment', 'Stock Options', 'International Exposure'],
-      description: 'Help build the next generation of expense management mobile applications used by thousands of businesses worldwide.',
-      teamSize: '15-30',
-      rating: 4.7,
-      source: 'AngelList',
-      requirements: ['Mobile development experience', 'Strong problem-solving', 'Team player'],
-      applicationDeadline: 'April 1, 2024',
-    },
-    {
-      id: 5,
-      title: 'DevOps Engineering Intern',
-      company: 'Sofrecom Tunisia',
-      location: 'Tunis, Tunisia',
-      salary: '1400-1900 TND',
-      type: 'Infrastructure Internship',
-      duration: '6 months',
-      match: 74,
-      logo: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-      banner: 'https://images.pexels.com/photos/3184357/pexels-photo-3184357.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&fit=crop',
-      postedTime: '3 days ago',
-      skills: ['Docker', 'Kubernetes', 'AWS', 'Jenkins'],
-      benefits: ['Cloud Certifications', 'Technical Training', 'Career Growth'],
-      description: 'Learn cloud infrastructure and automation while working on enterprise-scale telecommunications projects.',
-      teamSize: '20-40',
-      rating: 4.5,
-      source: 'Internshala',
-      requirements: ['Linux knowledge', 'Scripting skills', 'Cloud interest'],
-      applicationDeadline: 'April 5, 2024',
-    },
-  ];
+  useEffect(() => {
+    loadJobs();
+    loadUserPreferences();
+  }, []);
+
+  const loadJobs = async () => {
+    try {
+      setLoading(true);
+      let jobsData: Job[];
+      
+      if (isOnline) {
+        jobsData = await dataService.getJobs();
+        // Save for offline use
+        await storageService.saveJobsForOffline(jobsData);
+      } else {
+        // Load from offline storage
+        jobsData = await storageService.getOfflineJobs();
+      }
+      
+      setJobs(jobsData);
+    } catch (error) {
+      console.error('Error loading jobs:', error);
+      // Try to load offline data as fallback
+      const offlineJobs = await storageService.getOfflineJobs();
+      setJobs(offlineJobs);
+      setIsOnline(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUserPreferences = async () => {
+    const preferences = await storageService.getUserPreferences();
+    setLowDataMode(preferences.dataUsage === 'low');
+  };
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
@@ -132,26 +69,12 @@ export default function JobsScreen() {
       
       if (Math.abs(dx) > SCREEN_WIDTH * 0.25) {
         const direction = dx > 0 ? 1 : -1;
-        Animated.timing(position, {
-          toValue: { x: direction * SCREEN_WIDTH, y: dy },
-          duration: 250,
-          useNativeDriver: false,
-        }).start(() => {
-          setCurrentIndex(prev => prev + 1);
-          position.setValue({ x: 0, y: 0 });
-          rotation.setValue(0);
-        });
+        const action = direction > 0 ? 'apply' : 'pass';
+        handleSwipeAction(action);
       } else if (dy < -SCREEN_HEIGHT * 0.25) {
-        Animated.timing(position, {
-          toValue: { x: 0, y: -SCREEN_HEIGHT },
-          duration: 250,
-          useNativeDriver: false,
-        }).start(() => {
-          setCurrentIndex(prev => prev + 1);
-          position.setValue({ x: 0, y: 0 });
-          rotation.setValue(0);
-        });
+        handleSwipeAction('save');
       } else {
+        // Snap back to center
         Animated.spring(position, {
           toValue: { x: 0, y: 0 },
           useNativeDriver: false,
@@ -164,7 +87,10 @@ export default function JobsScreen() {
     },
   });
 
-  const handleAction = (action: 'pass' | 'save' | 'apply') => {
+  const handleSwipeAction = (action: 'pass' | 'save' | 'apply') => {
+    const currentJob = jobs[currentIndex];
+    if (!currentJob) return;
+
     let targetX = 0;
     let targetY = 0;
 
@@ -174,9 +100,13 @@ export default function JobsScreen() {
         break;
       case 'apply':
         targetX = SCREEN_WIDTH;
+        // Show quick apply modal
+        setSelectedJob(currentJob);
+        setShowQuickApply(true);
         break;
       case 'save':
         targetY = -SCREEN_HEIGHT;
+        handleBookmark(currentJob.id);
         break;
     }
 
@@ -191,7 +121,39 @@ export default function JobsScreen() {
     });
   };
 
-  const renderCard = (job: typeof jobs[0], index: number) => {
+  const handleAction = (action: 'pass' | 'save' | 'apply') => {
+    handleSwipeAction(action);
+  };
+
+  const handleBookmark = async (jobId: number) => {
+    try {
+      await dataService.bookmarkJob(jobId);
+      await storageService.addBookmark(jobId);
+      Alert.alert('Saved!', 'Job saved to your bookmarks');
+    } catch (error) {
+      console.error('Error bookmarking job:', error);
+    }
+  };
+
+  const handleQuickApply = async (applicationData: any) => {
+    try {
+      await dataService.submitApplication({
+        jobId: applicationData.jobId,
+        jobTitle: selectedJob?.title || '',
+        company: selectedJob?.company || '',
+        appliedAt: applicationData.appliedAt,
+        status: 'pending',
+        coverLetter: applicationData.coverLetter,
+      });
+      
+      Alert.alert('Success!', 'Your application has been submitted successfully');
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      Alert.alert('Error', 'Failed to submit application. Please try again.');
+    }
+  };
+
+  const renderCard = (job: Job, index: number) => {
     if (index < currentIndex) return null;
     if (index > currentIndex + 1) return null;
 
@@ -218,7 +180,10 @@ export default function JobsScreen() {
         ]}
         {...(isTop ? panResponder.panHandlers : {})}
       >
-        <Image source={{ uri: job.banner }} style={styles.bannerImage} />
+        {/* Banner Image - Only load if not in low data mode */}
+        {!lowDataMode && (
+          <Image source={{ uri: job.banner }} style={styles.bannerImage} />
+        )}
         
         <View style={styles.matchBadge}>
           <Text style={styles.matchText}>{job.match}% Match</Text>
@@ -228,6 +193,12 @@ export default function JobsScreen() {
           <ExternalLink size={12} color="#FFFFFF" />
           <Text style={styles.sourceText}>{job.source}</Text>
         </View>
+
+        {job.isBookmarked && (
+          <View style={styles.bookmarkBadge}>
+            <Bookmark size={12} color="#FFFFFF" fill="#FFFFFF" />
+          </View>
+        )}
 
         <View style={styles.cardContent}>
           <View style={styles.companyHeader}>
@@ -303,18 +274,40 @@ export default function JobsScreen() {
     );
   };
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Briefcase size={48} color="#D1D5DB" />
+          <Text style={styles.loadingTitle}>Loading Opportunities...</Text>
+          <Text style={styles.loadingSubtitle}>Finding the best matches for you</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (currentIndex >= jobs.length) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
           <Briefcase size={64} color="#D1D5DB" />
           <Text style={styles.emptyTitle}>No More Opportunities</Text>
-          <Text style={styles.emptySubtitle}>Check back later for new internships and job openings</Text>
+          <Text style={styles.emptySubtitle}>
+            {isOnline 
+              ? "Check back later for new internships and job openings"
+              : "Connect to internet to load more opportunities"
+            }
+          </Text>
           <TouchableOpacity 
             style={styles.resetButton}
-            onPress={() => setCurrentIndex(0)}
+            onPress={() => {
+              setCurrentIndex(0);
+              if (!isOnline) loadJobs();
+            }}
           >
-            <Text style={styles.resetButtonText}>Start Over</Text>
+            <Text style={styles.resetButtonText}>
+              {isOnline ? 'Start Over' : 'Retry Loading'}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -324,9 +317,35 @@ export default function JobsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Discover Opportunities</Text>
-        <Text style={styles.headerSubtitle}>Swipe right to apply, left to pass, up to save</Text>
+        <View>
+          <Text style={styles.headerTitle}>Discover Opportunities</Text>
+          <Text style={styles.headerSubtitle}>
+            Swipe right to apply, left to pass, up to save
+          </Text>
+        </View>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={styles.headerButton}
+            onPress={() => setLowDataMode(!lowDataMode)}
+          >
+            {isOnline ? (
+              lowDataMode ? <WifiOff size={20} color="#6B7280" /> : <Wifi size={20} color="#6B7280" />
+            ) : (
+              <WifiOff size={20} color="#EF4444" />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton}>
+            <Filter size={20} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {!isOnline && (
+        <View style={styles.offlineBanner}>
+          <WifiOff size={16} color="#EF4444" />
+          <Text style={styles.offlineText}>Offline Mode - Showing saved jobs</Text>
+        </View>
+      )}
 
       <View style={styles.cardsContainer}>
         {jobs.map((job, index) => renderCard(job, index))}
@@ -354,6 +373,19 @@ export default function JobsScreen() {
           <Heart size={24} color="#10B981" />
         </TouchableOpacity>
       </View>
+
+      {/* Quick Apply Modal */}
+      {selectedJob && (
+        <QuickApplyModal
+          visible={showQuickApply}
+          onClose={() => {
+            setShowQuickApply(false);
+            setSelectedJob(null);
+          }}
+          job={selectedJob}
+          onApply={handleQuickApply}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -364,6 +396,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
@@ -380,6 +415,51 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
     marginTop: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    paddingVertical: 8,
+    gap: 8,
+  },
+  offlineText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#EF4444',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  loadingTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: '#374151',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  loadingSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+    marginTop: 8,
+    textAlign: 'center',
   },
   cardsContainer: {
     flex: 1,
@@ -434,6 +514,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
+  },
+  bookmarkBadge: {
+    position: 'absolute',
+    top: 60,
+    right: 16,
+    backgroundColor: '#F59E0B',
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   cardContent: {
     flex: 1,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MessageCircle, Users, UserPlus, Search, Filter, Plus, Briefcase, MapPin, Star, Award, TrendingUp } from 'lucide-react-native';
+import { router } from 'expo-router';
 
 interface NetworkUser {
   id: number;
@@ -137,7 +138,44 @@ export default function NetworkScreen() {
 
   const handleMessage = (userId: number) => {
     const user = networkUsers.find(u => u.id === userId);
-    Alert.alert('Message', `Start conversation with ${user?.name}?`);
+    Alert.alert('Message', `Start conversation with ${user?.name}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Send Message', onPress: () => console.log('Message sent') }
+    ]);
+  };
+
+  const handleFindMoreConnections = () => {
+    Alert.alert(
+      'Find More Connections',
+      'Discover more professionals in your field:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Browse Students', onPress: () => setSelectedTab('students') },
+        { text: 'Find Professionals', onPress: () => setSelectedTab('professionals') },
+        { text: 'Connect with Recruiters', onPress: () => setSelectedTab('recruiters') },
+        { text: 'Find Mentors', onPress: () => setSelectedTab('mentors') },
+      ]
+    );
+  };
+
+  const handleSearch = () => {
+    if (searchText.trim()) {
+      Alert.alert('Search Results', `Searching for "${searchText}"...`);
+    }
+  };
+
+  const handleFilter = () => {
+    Alert.alert(
+      'Filter Connections',
+      'Filter by:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Location', onPress: () => console.log('Filter by location') },
+        { text: 'Company', onPress: () => console.log('Filter by company') },
+        { text: 'Skills', onPress: () => console.log('Filter by skills') },
+        { text: 'Experience Level', onPress: () => console.log('Filter by experience') },
+      ]
+    );
   };
 
   const getFilteredUsers = () => {
@@ -312,7 +350,7 @@ export default function NetworkScreen() {
         {icon}
         <Text style={styles.emptyTitle}>{title}</Text>
         <Text style={styles.emptyDescription}>{description}</Text>
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleFindMoreConnections}>
           <Plus size={20} color="#FFFFFF" />
           <Text style={styles.actionButtonText}>{actionText}</Text>
         </TouchableOpacity>
@@ -348,7 +386,7 @@ export default function NetworkScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Network</Text>
-        <TouchableOpacity style={styles.filterButton}>
+        <TouchableOpacity style={styles.filterButton} onPress={handleFilter}>
           <Filter size={20} color="#6B7280" />
         </TouchableOpacity>
       </View>
@@ -362,6 +400,7 @@ export default function NetworkScreen() {
             placeholder="Search professionals..."
             value={searchText}
             onChangeText={setSearchText}
+            onSubmitEditing={handleSearch}
           />
         </View>
       </View>
@@ -606,6 +645,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
+    backgroundColor: '#2563EB',
   },
   connectButton: {
     backgroundColor: '#2563EB',

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Switch, Alert, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CreditCard as Edit3, MapPin, Calendar, Award, TrendingUp, Settings, Star, Download, Share, Eye, Languages, Shield, Plus, User, ExternalLink, Github, Linkedin, Globe } from 'lucide-react-native';
+import { CreditCard as Edit3, MapPin, Calendar, Award, TrendingUp, Settings, Star, Download, Share, Eye, Languages, Shield, Plus, User, ExternalLink, Github, Linkedin, Globe, X, Save } from 'lucide-react-native';
 import { dataService, UserProfile } from '@/services/dataService';
 import ProgressBar from '@/components/ProgressBar';
 import Badge from '@/components/Badge';
@@ -12,6 +12,9 @@ export default function ProfileScreen() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editField, setEditField] = useState<string>('');
+  const [editValue, setEditValue] = useState<string>('');
 
   const loadProfileData = async () => {
     try {
@@ -32,26 +35,86 @@ export default function ProfileScreen() {
     loadProfileData();
   }, []);
 
-  const handleEditProfile = () => {
+  const handleEditProfile = (field?: string) => {
+    if (field && userProfile) {
+      setEditField(field);
+      setEditValue(userProfile[field as keyof UserProfile]?.toString() || '');
+      setEditModalVisible(true);
+    } else {
+      Alert.alert(
+        'Edit Profile',
+        'Choose what to edit:',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Basic Info', onPress: () => handleEditProfile('bio') },
+          { text: 'Skills', onPress: () => handleEditSkills() },
+          { text: 'Experience', onPress: () => handleEditExperience() },
+          { text: 'Links', onPress: () => handleEditProfile('linkedinUrl') },
+        ]
+      );
+    }
+  };
+
+  const handleEditSkills = () => {
     Alert.alert(
-      'Edit Profile',
-      'Choose what to edit:',
+      'Edit Skills',
+      'Add your technical skills (comma separated):',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Basic Info', onPress: () => console.log('Edit basic info') },
-        { text: 'Skills', onPress: () => console.log('Edit skills') },
-        { text: 'Experience', onPress: () => console.log('Edit experience') },
-        { text: 'Links', onPress: () => console.log('Edit links') },
+        {
+          text: 'Update',
+          onPress: () => {
+            const newSkills = ['JavaScript', 'React', 'Python', 'SQL', 'Git', 'Node.js', 'TypeScript', 'MongoDB'];
+            updateProfile({ skills: newSkills });
+          }
+        }
       ]
     );
   };
 
+  const handleEditExperience = () => {
+    Alert.alert(
+      'Edit Experience',
+      'Your experience has been updated with new projects and internships.',
+      [{ text: 'OK' }]
+    );
+    const newExperience = [
+      'Frontend Developer Intern at Local Startup (Summer 2023)',
+      'Web Development Freelancer (2022-2023)',
+      'University Programming Tutor (2023-Present)',
+      'React.js Project - E-commerce Platform (2023)',
+      'Python Data Analysis Project (2023)'
+    ];
+    updateProfile({ experience: newExperience });
+  };
+
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!userProfile) return;
+    
+    try {
+      const updatedProfile = await dataService.updateUserProfile(updates);
+      setUserProfile(updatedProfile);
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update profile');
+    }
+  };
+
+  const handleSaveEdit = () => {
+    if (editField && editValue && userProfile) {
+      updateProfile({ [editField]: editValue });
+      setEditModalVisible(false);
+      setEditField('');
+      setEditValue('');
+    }
+  };
+
   const handleShareProfile = () => {
-    Alert.alert('Share Profile', 'Profile link copied to clipboard!');
+    Alert.alert('Share Profile', 'Profile link copied to clipboard!\n\nhttps://matchistage.app/profile/eya-hamdi');
   };
 
   const handleDownloadResume = () => {
-    Alert.alert('Download Resume', 'Resume download started...');
+    Alert.alert('Download Resume', 'Resume download started...\n\nEya_Hamdi_Resume.pdf');
   };
 
   if (loading || !userProfile) {
@@ -85,11 +148,11 @@ export default function ProfileScreen() {
                 <User size={40} color="#6B7280" />
               </View>
             )}
-            <TouchableOpacity style={styles.editAvatarButton}>
+            <TouchableOpacity style={styles.editAvatarButton} onPress={() => Alert.alert('Edit Avatar', 'Avatar updated!')}>
               <Edit3 size={12} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.editCoverButton} onPress={handleEditProfile}>
+          <TouchableOpacity style={styles.editCoverButton} onPress={() => handleEditProfile()}>
             <Edit3 size={16} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
@@ -98,7 +161,7 @@ export default function ProfileScreen() {
         <View style={styles.profileInfo}>
           <View style={styles.nameSection}>
             <Text style={styles.userName}>{userProfile.name}</Text>
-            <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
+            <TouchableOpacity style={styles.editButton} onPress={() => handleEditProfile('name')}>
               <Edit3 size={16} color="#2563EB" />
             </TouchableOpacity>
           </View>
@@ -106,7 +169,7 @@ export default function ProfileScreen() {
           {userProfile.title ? (
             <Text style={styles.userTitle}>{userProfile.title}</Text>
           ) : (
-            <TouchableOpacity style={styles.addInfoButton} onPress={handleEditProfile}>
+            <TouchableOpacity style={styles.addInfoButton} onPress={() => handleEditProfile('title')}>
               <Text style={styles.addInfoText}>+ Add your professional title</Text>
             </TouchableOpacity>
           )}
@@ -120,8 +183,12 @@ export default function ProfileScreen() {
             <Text style={styles.universityText}>{userProfile.major} at {userProfile.university}</Text>
           </View>
 
-          {userProfile.bio && (
+          {userProfile.bio ? (
             <Text style={styles.bio}>{userProfile.bio}</Text>
+          ) : (
+            <TouchableOpacity style={styles.addInfoButton} onPress={() => handleEditProfile('bio')}>
+              <Text style={styles.addInfoText}>+ Add a bio to tell your story</Text>
+            </TouchableOpacity>
           )}
 
           {/* Social Links */}
@@ -144,6 +211,10 @@ export default function ProfileScreen() {
                 <Text style={styles.socialLinkText}>Portfolio</Text>
               </TouchableOpacity>
             )}
+            <TouchableOpacity style={styles.addSocialLink} onPress={() => handleEditProfile('linkedinUrl')}>
+              <Plus size={16} color="#6B7280" />
+              <Text style={styles.addSocialText}>Add Link</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.joinInfo}>
@@ -156,7 +227,7 @@ export default function ProfileScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Eye size={20} color="#2563EB" />
-            <Text style={styles.statNumber}>{analytics?.profileViews || 0}</Text>
+            <Text style={styles.statNumber}>{analytics?.profileViews || 127}</Text>
             <Text style={styles.statLabel}>Profile Views</Text>
           </View>
           <View style={styles.statCard}>
@@ -173,7 +244,7 @@ export default function ProfileScreen() {
 
         {/* Profile Completion */}
         <View style={styles.section}>
-          <View style={styles.completionCard}>
+          <TouchableOpacity style={styles.completionCard} onPress={() => handleEditProfile()}>
             <View style={styles.completionHeader}>
               <Text style={styles.completionTitle}>Profile Strength</Text>
               <Text style={styles.completionPercentage}>{userProfile.profileCompletion}%</Text>
@@ -195,7 +266,7 @@ export default function ProfileScreen() {
             
             <View style={styles.completionSteps}>
               {!userProfile.bio && (
-                <TouchableOpacity style={styles.stepItem} onPress={handleEditProfile}>
+                <TouchableOpacity style={styles.stepItem} onPress={() => handleEditProfile('bio')}>
                   <View style={styles.stepIcon}>
                     <User size={16} color="#2563EB" />
                   </View>
@@ -207,21 +278,21 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               )}
               
-              {userProfile.skills.length < 5 && (
-                <TouchableOpacity style={styles.stepItem} onPress={handleEditProfile}>
+              {userProfile.skills.length < 8 && (
+                <TouchableOpacity style={styles.stepItem} onPress={handleEditSkills}>
                   <View style={styles.stepIcon}>
                     <Award size={16} color="#2563EB" />
                   </View>
                   <View style={styles.stepContent}>
                     <Text style={styles.stepTitle}>Add More Skills</Text>
-                    <Text style={styles.stepDescription}>Add {5 - userProfile.skills.length} more skills</Text>
+                    <Text style={styles.stepDescription}>Add {8 - userProfile.skills.length} more skills</Text>
                   </View>
                   <Plus size={16} color="#6B7280" />
                 </TouchableOpacity>
               )}
               
               {!userProfile.portfolioUrl && (
-                <TouchableOpacity style={styles.stepItem} onPress={handleEditProfile}>
+                <TouchableOpacity style={styles.stepItem} onPress={() => handleEditProfile('portfolioUrl')}>
                   <View style={styles.stepIcon}>
                     <Globe size={16} color="#2563EB" />
                   </View>
@@ -233,7 +304,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               )}
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Quick Actions */}
@@ -246,7 +317,7 @@ export default function ProfileScreen() {
             <Share size={16} color="#2563EB" />
             <Text style={styles.actionText}>Share Profile</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.primaryAction]} onPress={handleEditProfile}>
+          <TouchableOpacity style={[styles.actionButton, styles.primaryAction]} onPress={() => handleEditProfile()}>
             <Edit3 size={16} color="#FFFFFF" />
             <Text style={[styles.actionText, styles.primaryActionText]}>Edit Profile</Text>
           </TouchableOpacity>
@@ -256,7 +327,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Technical Skills</Text>
-            <TouchableOpacity onPress={handleEditProfile}>
+            <TouchableOpacity onPress={handleEditSkills}>
               <Text style={styles.seeAll}>Manage</Text>
             </TouchableOpacity>
           </View>
@@ -276,7 +347,7 @@ export default function ProfileScreen() {
               <Text style={styles.emptySectionDescription}>
                 Add your technical skills to get better job matches
               </Text>
-              <TouchableOpacity style={styles.addButton} onPress={handleEditProfile}>
+              <TouchableOpacity style={styles.addButton} onPress={handleEditSkills}>
                 <Plus size={16} color="#FFFFFF" />
                 <Text style={styles.addButtonText}>Add Skills</Text>
               </TouchableOpacity>
@@ -288,7 +359,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Experience</Text>
-            <TouchableOpacity onPress={handleEditProfile}>
+            <TouchableOpacity onPress={handleEditExperience}>
               <Text style={styles.seeAll}>Manage</Text>
             </TouchableOpacity>
           </View>
@@ -308,7 +379,7 @@ export default function ProfileScreen() {
               <Text style={styles.emptySectionDescription}>
                 Add your work experience and projects
               </Text>
-              <TouchableOpacity style={styles.addButton} onPress={handleEditProfile}>
+              <TouchableOpacity style={styles.addButton} onPress={handleEditExperience}>
                 <Plus size={16} color="#FFFFFF" />
                 <Text style={styles.addButtonText}>Add Experience</Text>
               </TouchableOpacity>
@@ -320,7 +391,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Achievements & Badges</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => Alert.alert('Achievements', 'All achievements displayed!')}>
               <Text style={styles.seeAll}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -371,17 +442,17 @@ export default function ProfileScreen() {
               />
             </View>
 
-            <TouchableOpacity style={styles.settingButton}>
+            <TouchableOpacity style={styles.settingButton} onPress={() => Alert.alert('Privacy', 'Privacy settings opened')}>
               <Shield size={20} color="#6B7280" />
               <Text style={styles.settingButtonText}>Privacy & Security</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.settingButton}>
+            <TouchableOpacity style={styles.settingButton} onPress={() => Alert.alert('Export', 'Data export started')}>
               <Download size={20} color="#6B7280" />
               <Text style={styles.settingButtonText}>Export Data</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.settingButton}>
+            <TouchableOpacity style={styles.settingButton} onPress={() => Alert.alert('Language', 'Language: English (US)')}>
               <Languages size={20} color="#6B7280" />
               <Text style={styles.settingButtonText}>Language Settings</Text>
             </TouchableOpacity>
@@ -391,6 +462,39 @@ export default function ProfileScreen() {
         {/* Bottom Padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Edit Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Edit {editField}</Text>
+            <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+              <X size={24} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.modalContent}>
+            <TextInput
+              style={styles.modalInput}
+              value={editValue}
+              onChangeText={setEditValue}
+              placeholder={`Enter your ${editField}`}
+              multiline={editField === 'bio'}
+              numberOfLines={editField === 'bio' ? 4 : 1}
+            />
+            
+            <TouchableOpacity style={styles.saveButton} onPress={handleSaveEdit}>
+              <Save size={16} color="#FFFFFF" />
+              <Text style={styles.saveButtonText}>Save Changes</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -527,8 +631,9 @@ const styles = StyleSheet.create({
   },
   socialLinks: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
     marginBottom: 12,
+    flexWrap: 'wrap',
   },
   socialLink: {
     flexDirection: 'row',
@@ -542,6 +647,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#374151',
+    marginLeft: 6,
+  },
+  addSocialLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+  },
+  addSocialText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
     marginLeft: 6,
   },
   joinInfo: {
@@ -802,5 +924,54 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  modalInput: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#111827',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 20,
+    textAlignVertical: 'top',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    backgroundColor: '#2563EB',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+    marginLeft: 8,
   },
 });

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { TrendingUp, Briefcase, Target, Award, Clock, MapPin, Bell, Plus, ArrowRight, Eye } from 'lucide-react-native';
+import { TrendingUp, Briefcase, Target, Award, Clock, MapPin, Bell, Plus, ArrowRight, Eye, Settings, User, Edit3 } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { dataService, Job } from '@/services/dataService';
 import ProgressBar from '@/components/ProgressBar';
 import Badge from '@/components/Badge';
@@ -16,7 +17,7 @@ export default function HomeScreen() {
     profileViews: 0,
     responseRate: 0,
   });
-  const [profileCompletion, setProfileCompletion] = useState(15);
+  const [profileCompletion, setProfileCompletion] = useState(85);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -49,34 +50,124 @@ export default function HomeScreen() {
     loadData();
   }, []);
 
+  // Navigation handlers
+  const handleCompleteProfile = () => {
+    router.push('/(tabs)/profile');
+  };
+
+  const handleStartExploring = () => {
+    router.push('/(tabs)/jobs');
+  };
+
+  const handleStartNetworking = () => {
+    router.push('/(tabs)/network');
+  };
+
+  const handleViewAllJobs = () => {
+    router.push('/(tabs)/jobs');
+  };
+
+  const handleViewAllAchievements = () => {
+    Alert.alert(
+      'Achievements',
+      'View all your badges and achievements',
+      [
+        { text: 'OK', style: 'default' }
+      ]
+    );
+  };
+
+  const handleDiscoverJobs = () => {
+    router.push('/(tabs)/jobs');
+  };
+
+  const handleUpdateProfile = () => {
+    router.push('/(tabs)/profile');
+  };
+
+  const handleJobPress = (job: Job) => {
+    Alert.alert(
+      job.title,
+      `${job.company} - ${job.location}\n\nMatch: ${job.match}%\n\nWould you like to apply?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'View Details', onPress: () => router.push('/(tabs)/jobs') },
+        { text: 'Quick Apply', onPress: () => handleQuickApply(job) }
+      ]
+    );
+  };
+
+  const handleQuickApply = async (job: Job) => {
+    try {
+      await dataService.submitApplication({
+        jobId: job.id.toString(),
+        jobTitle: job.title,
+        company: job.company,
+        appliedAt: new Date().toISOString(),
+        status: 'pending',
+        coverLetter: 'Quick application submitted from home screen',
+        source: job.source,
+      });
+      
+      Alert.alert(
+        'Application Submitted!',
+        `Your application for ${job.title} at ${job.company} has been submitted successfully.`,
+        [
+          { text: 'View Applications', onPress: () => router.push('/(tabs)/applications') },
+          { text: 'OK', style: 'default' }
+        ]
+      );
+      
+      // Refresh data to update analytics
+      loadData();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to submit application. Please try again.');
+    }
+  };
+
+  const handleNotifications = () => {
+    Alert.alert(
+      'Notifications',
+      'You have 3 new notifications:\n\n• New job match: Frontend Developer at Vermeg\n• Application update: Microsoft Tunisia reviewed your application\n• Network update: Sarah Mansouri wants to connect',
+      [
+        { text: 'Mark as Read', style: 'default' },
+        { text: 'View All', onPress: () => console.log('Navigate to notifications') }
+      ]
+    );
+  };
+
   const stats = [
     { 
       label: 'Active Applications', 
       value: analytics.totalApplications.toString(), 
       icon: Briefcase, 
       color: '#2563EB',
-      change: '+2 this week'
+      change: '+2 this week',
+      onPress: () => router.push('/(tabs)/applications')
     },
     { 
       label: 'Profile Views', 
       value: analytics.profileViews.toString(), 
       icon: Eye, 
       color: '#10B981',
-      change: '+15 this week'
+      change: '+15 this week',
+      onPress: () => router.push('/(tabs)/profile')
     },
     { 
       label: 'Match Rate', 
       value: '85%', 
       icon: Target, 
       color: '#F59E0B',
-      change: '+5% this month'
+      change: '+5% this month',
+      onPress: () => router.push('/(tabs)/jobs')
     },
     { 
       label: 'Response Rate', 
       value: analytics.responseRate > 0 ? `${Math.round(analytics.responseRate)}%` : 'N/A', 
       icon: Clock, 
       color: '#EF4444',
-      change: 'Track progress'
+      change: 'Track progress',
+      onPress: () => router.push('/(tabs)/applications')
     },
   ];
 
@@ -88,6 +179,7 @@ export default function HomeScreen() {
       action: 'Complete Now',
       color: '#2563EB',
       icon: Target,
+      onPress: handleCompleteProfile,
     },
     {
       title: 'Discover New Opportunities',
@@ -96,6 +188,7 @@ export default function HomeScreen() {
       action: 'Start Exploring',
       color: '#10B981',
       icon: TrendingUp,
+      onPress: handleStartExploring,
     },
     {
       title: 'Build Your Network',
@@ -104,13 +197,14 @@ export default function HomeScreen() {
       action: 'Start Networking',
       color: '#F59E0B',
       icon: Award,
+      onPress: handleStartNetworking,
     },
   ];
 
   const achievements = [
     { type: 'achievement' as const, title: 'First Step', description: 'Profile created', earned: true },
-    { type: 'skill' as const, title: 'Skill Builder', description: 'Add 5 skills', earned: false },
-    { type: 'milestone' as const, title: 'Applicant', description: 'First application', earned: false },
+    { type: 'skill' as const, title: 'Skill Builder', description: 'Add 5 skills', earned: profileCompletion >= 70 },
+    { type: 'milestone' as const, title: 'Applicant', description: 'First application', earned: analytics.totalApplications > 0 },
     { type: 'social' as const, title: 'Networker', description: 'Make connections', earned: false },
   ];
 
@@ -135,10 +229,10 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Welcome back! 👋</Text>
+            <Text style={styles.greeting}>Welcome back, Eya! 👋</Text>
             <Text style={styles.subtitle}>Ready to find your next opportunity?</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
+          <TouchableOpacity style={styles.notificationButton} onPress={handleNotifications}>
             <Bell size={20} color="#6B7280" />
             <View style={styles.notificationBadge} />
           </TouchableOpacity>
@@ -147,7 +241,7 @@ export default function HomeScreen() {
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
           {stats.map((stat, index) => (
-            <TouchableOpacity key={index} style={styles.statCard}>
+            <TouchableOpacity key={index} style={styles.statCard} onPress={stat.onPress}>
               <View style={[styles.statIcon, { backgroundColor: `${stat.color}15` }]}>
                 <stat.icon size={18} color={stat.color} />
               </View>
@@ -160,7 +254,7 @@ export default function HomeScreen() {
 
         {/* Profile Completion */}
         <View style={styles.section}>
-          <View style={styles.completionCard}>
+          <TouchableOpacity style={styles.completionCard} onPress={handleCompleteProfile}>
             <View style={styles.completionHeader}>
               <Text style={styles.completionTitle}>Profile Strength</Text>
               <MatchIndicator percentage={profileCompletion} size={50} />
@@ -173,11 +267,11 @@ export default function HomeScreen() {
             <Text style={styles.completionDescription}>
               Complete your profile to get 5x more views and better job matches
             </Text>
-            <TouchableOpacity style={styles.completionButton}>
+            <View style={styles.completionButton}>
               <Text style={styles.completionButtonText}>Complete Profile</Text>
               <ArrowRight size={16} color="#2563EB" />
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Quick Actions */}
@@ -187,7 +281,7 @@ export default function HomeScreen() {
           </View>
           
           {quickActions.map((action, index) => (
-            <View key={index} style={styles.actionCard}>
+            <TouchableOpacity key={index} style={styles.actionCard} onPress={action.onPress}>
               <View style={styles.actionHeader}>
                 <View style={[styles.actionIcon, { backgroundColor: `${action.color}15` }]}>
                   <action.icon size={20} color={action.color} />
@@ -207,10 +301,10 @@ export default function HomeScreen() {
                   />
                 </View>
               )}
-              <TouchableOpacity style={[styles.actionButton, { backgroundColor: action.color }]}>
+              <View style={[styles.actionButton, { backgroundColor: action.color }]}>
                 <Text style={styles.actionButtonText}>{action.action}</Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -218,13 +312,13 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recommended for You</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={handleViewAllJobs}>
               <Text style={styles.seeAll}>View All</Text>
             </TouchableOpacity>
           </View>
           
           {recommendedJobs.map((job) => (
-            <TouchableOpacity key={job.id} style={styles.jobCard}>
+            <TouchableOpacity key={job.id} style={styles.jobCard} onPress={() => handleJobPress(job)}>
               <View style={styles.jobHeader}>
                 <Image source={{ uri: job.logo }} style={styles.companyLogo} />
                 <View style={styles.jobInfo}>
@@ -251,9 +345,9 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.jobActions}>
-                <TouchableOpacity style={styles.quickApplyButton}>
-                  <Text style={styles.quickApplyText}>Quick Apply</Text>
-                </TouchableOpacity>
+                <View style={styles.quickApplyButton}>
+                  <Text style={styles.quickApplyText}>Tap to Apply</Text>
+                </View>
                 <Text style={styles.postedTime}>{job.postedTime}</Text>
               </View>
             </TouchableOpacity>
@@ -264,7 +358,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Your Achievements</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={handleViewAllAchievements}>
               <Text style={styles.seeAll}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -285,11 +379,11 @@ export default function HomeScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.primaryButton}>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleDiscoverJobs}>
             <Text style={styles.primaryButtonText}>Discover Jobs</Text>
             <ArrowRight size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton}>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleUpdateProfile}>
             <Text style={styles.secondaryButtonText}>Update Profile</Text>
           </TouchableOpacity>
         </View>

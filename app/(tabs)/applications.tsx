@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Clock, CircleCheck as CheckCircle, Circle as XCircle, Eye, MessageCircle, Filter, Search, Plus, Calendar, ExternalLink, Trash2, Edit3, MoreVertical } from 'lucide-react-native';
+import { Clock, CircleCheck as CheckCircle, Circle as XCircle, Eye, MessageCircle, Filter, Search, Plus, Calendar, ExternalLink, Trash2, CreditCard as Edit3, MoveVertical as MoreVertical } from 'lucide-react-native';
 import { dataService, Application } from '@/services/dataService';
 
 export default function ApplicationsScreen() {

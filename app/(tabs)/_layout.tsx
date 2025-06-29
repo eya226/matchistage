@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, Briefcase, FileText, Users, User } from 'lucide-react-native';
+import { Chrome as Home, Briefcase, FileText, Users, User, Target } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
 
 export default function TabLayout() {
@@ -28,6 +28,15 @@ export default function TabLayout() {
           title: 'Discover',
           tabBarIcon: ({ size, color }) => (
             <Briefcase size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="skills"
+        options={{
+          title: 'Skills',
+          tabBarIcon: ({ size, color }) => (
+            <Target size={size} color={color} />
           ),
         }}
       />

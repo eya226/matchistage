@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { TrendingUp, Briefcase, Target, Award, Clock, MapPin, Bell, Plus, ArrowRight, Eye, Settings, User, Edit3 } from 'lucide-react-native';
+import { TrendingUp, Briefcase, Target, Award, Clock, MapPin, Bell, Plus, ArrowRight, Eye, Settings, User, CreditCard as Edit3 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { dataService, Job } from '@/services/dataService';
 import ProgressBar from '@/components/ProgressBar';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Edit3, MapPin, Calendar, Award, TrendingUp, Settings, Star, Download, Share, Eye, Languages, Shield, Plus, User, ExternalLink, Github, Linkedin, Globe } from 'lucide-react-native';
+import { CreditCard as Edit3, MapPin, Calendar, Award, TrendingUp, Settings, Star, Download, Share, Eye, Languages, Shield, Plus, User, ExternalLink, Github, Linkedin, Globe } from 'lucide-react-native';
 import { dataService, UserProfile } from '@/services/dataService';
 import ProgressBar from '@/components/ProgressBar';
 import Badge from '@/components/Badge';

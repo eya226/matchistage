@@ -1,98 +1,75 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Switch } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CreditCard as Edit3, MapPin, Calendar, Award, TrendingUp, Settings, Star, Download, Share, Eye, Languages, Shield, Plus, User } from 'lucide-react-native';
+import { Edit3, MapPin, Calendar, Award, TrendingUp, Settings, Star, Download, Share, Eye, Languages, Shield, Plus, User, ExternalLink, Github, Linkedin, Globe } from 'lucide-react-native';
+import { dataService, UserProfile } from '@/services/dataService';
+import ProgressBar from '@/components/ProgressBar';
+import Badge from '@/components/Badge';
 
 export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [profileVisibility, setProfileVisibility] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // New user profile with minimal data
-  const userProfile = {
-    name: 'New User',
-    title: 'Add your title',
-    location: 'Add your location',
-    avatar: null,
-    coverImage: 'https://images.pexels.com/photos/3182773/pexels-photo-3182773.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&fit=crop',
-    joinDate: 'Joined today',
-    completionRate: 15,
-    views: 0,
-    connections: 0,
+  const loadProfileData = async () => {
+    try {
+      const [profile, analyticsData] = await Promise.all([
+        dataService.getUserProfile(),
+        dataService.getAnalytics()
+      ]);
+      setUserProfile(profile);
+      setAnalytics(analyticsData);
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const renderProfileCompletion = () => (
-    <View style={styles.completionCard}>
-      <View style={styles.completionHeader}>
-        <Text style={styles.completionTitle}>Complete Your Profile</Text>
-        <Text style={styles.completionPercentage}>{userProfile.completionRate}%</Text>
-      </View>
-      <View style={styles.progressBar}>
-        <View style={[styles.progressFill, { width: `${userProfile.completionRate}%` }]} />
-      </View>
-      <Text style={styles.completionDescription}>
-        A complete profile gets 5x more views and better job matches
-      </Text>
-      
-      <View style={styles.completionSteps}>
-        <TouchableOpacity style={styles.stepItem}>
-          <View style={styles.stepIcon}>
-            <User size={16} color="#2563EB" />
-          </View>
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Add Profile Photo</Text>
-            <Text style={styles.stepDescription}>Upload a professional photo</Text>
-          </View>
-          <Plus size={16} color="#6B7280" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.stepItem}>
-          <View style={styles.stepIcon}>
-            <Award size={16} color="#2563EB" />
-          </View>
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Add Skills</Text>
-            <Text style={styles.stepDescription}>List your technical skills</Text>
-          </View>
-          <Plus size={16} color="#6B7280" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.stepItem}>
-          <View style={styles.stepIcon}>
-            <TrendingUp size={16} color="#2563EB" />
-          </View>
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Add Experience</Text>
-            <Text style={styles.stepDescription}>Include projects and internships</Text>
-          </View>
-          <Plus size={16} color="#6B7280" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  useEffect(() => {
+    loadProfileData();
+  }, []);
 
-  const renderEmptySkills = () => (
-    <View style={styles.emptySection}>
-      <Award size={48} color="#D1D5DB" />
-      <Text style={styles.emptySectionTitle}>No Skills Added</Text>
-      <Text style={styles.emptySectionDescription}>
-        Add your technical skills to get better job matches and showcase your expertise
-      </Text>
-      <TouchableOpacity style={styles.addButton}>
-        <Plus size={16} color="#FFFFFF" />
-        <Text style={styles.addButtonText}>Add Skills</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const handleEditProfile = () => {
+    Alert.alert(
+      'Edit Profile',
+      'Choose what to edit:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Basic Info', onPress: () => console.log('Edit basic info') },
+        { text: 'Skills', onPress: () => console.log('Edit skills') },
+        { text: 'Experience', onPress: () => console.log('Edit experience') },
+        { text: 'Links', onPress: () => console.log('Edit links') },
+      ]
+    );
+  };
 
-  const renderEmptyAchievements = () => (
-    <View style={styles.emptySection}>
-      <Star size={48} color="#D1D5DB" />
-      <Text style={styles.emptySectionTitle}>No Achievements Yet</Text>
-      <Text style={styles.emptySectionDescription}>
-        Start applying to jobs and completing profile sections to earn achievements
-      </Text>
-    </View>
-  );
+  const handleShareProfile = () => {
+    Alert.alert('Share Profile', 'Profile link copied to clipboard!');
+  };
+
+  const handleDownloadResume = () => {
+    Alert.alert('Download Resume', 'Resume download started...');
+  };
+
+  if (loading || !userProfile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const achievements = [
+    { type: 'achievement' as const, title: 'Profile Complete', description: '85% completed', earned: true },
+    { type: 'skill' as const, title: 'Skill Master', description: '6 skills added', earned: true },
+    { type: 'milestone' as const, title: 'First Application', description: 'Applied to first job', earned: analytics?.totalApplications > 0 },
+    { type: 'social' as const, title: 'Networker', description: 'Connect with others', earned: false },
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -101,14 +78,18 @@ export default function ProfileScreen() {
         <View style={styles.profileHeader}>
           <Image source={{ uri: userProfile.coverImage }} style={styles.coverImage} />
           <View style={styles.avatarContainer}>
-            <View style={styles.avatarPlaceholder}>
-              <User size={40} color="#6B7280" />
-            </View>
+            {userProfile.avatar ? (
+              <Image source={{ uri: userProfile.avatar }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <User size={40} color="#6B7280" />
+              </View>
+            )}
             <TouchableOpacity style={styles.editAvatarButton}>
-              <Plus size={12} color="#FFFFFF" />
+              <Edit3 size={12} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.editCoverButton}>
+          <TouchableOpacity style={styles.editCoverButton} onPress={handleEditProfile}>
             <Edit3 size={16} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
@@ -117,20 +98,57 @@ export default function ProfileScreen() {
         <View style={styles.profileInfo}>
           <View style={styles.nameSection}>
             <Text style={styles.userName}>{userProfile.name}</Text>
-            <TouchableOpacity style={styles.editButton}>
+            <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
               <Edit3 size={16} color="#2563EB" />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.addInfoButton}>
-            <Text style={styles.addInfoText}>+ Add your professional title</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.addInfoButton}>
+          
+          {userProfile.title ? (
+            <Text style={styles.userTitle}>{userProfile.title}</Text>
+          ) : (
+            <TouchableOpacity style={styles.addInfoButton} onPress={handleEditProfile}>
+              <Text style={styles.addInfoText}>+ Add your professional title</Text>
+            </TouchableOpacity>
+          )}
+          
+          <View style={styles.locationContainer}>
             <MapPin size={14} color="#6B7280" />
-            <Text style={styles.addInfoText}>+ Add your location</Text>
-          </TouchableOpacity>
+            <Text style={styles.locationText}>{userProfile.location}</Text>
+          </View>
+          
+          <View style={styles.universityContainer}>
+            <Text style={styles.universityText}>{userProfile.major} at {userProfile.university}</Text>
+          </View>
+
+          {userProfile.bio && (
+            <Text style={styles.bio}>{userProfile.bio}</Text>
+          )}
+
+          {/* Social Links */}
+          <View style={styles.socialLinks}>
+            {userProfile.linkedinUrl && (
+              <TouchableOpacity style={styles.socialLink}>
+                <Linkedin size={16} color="#0A66C2" />
+                <Text style={styles.socialLinkText}>LinkedIn</Text>
+              </TouchableOpacity>
+            )}
+            {userProfile.githubUrl && (
+              <TouchableOpacity style={styles.socialLink}>
+                <Github size={16} color="#333" />
+                <Text style={styles.socialLinkText}>GitHub</Text>
+              </TouchableOpacity>
+            )}
+            {userProfile.portfolioUrl && (
+              <TouchableOpacity style={styles.socialLink}>
+                <Globe size={16} color="#2563EB" />
+                <Text style={styles.socialLinkText}>Portfolio</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           <View style={styles.joinInfo}>
             <Calendar size={14} color="#6B7280" />
-            <Text style={styles.joinDate}>{userProfile.joinDate}</Text>
+            <Text style={styles.joinDate}>Member since 2024</Text>
           </View>
         </View>
 
@@ -138,37 +156,97 @@ export default function ProfileScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Eye size={20} color="#2563EB" />
-            <Text style={styles.statNumber}>{userProfile.views}</Text>
+            <Text style={styles.statNumber}>{analytics?.profileViews || 0}</Text>
             <Text style={styles.statLabel}>Profile Views</Text>
           </View>
           <View style={styles.statCard}>
             <Award size={20} color="#10B981" />
-            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statNumber}>{achievements.filter(a => a.earned).length}</Text>
             <Text style={styles.statLabel}>Achievements</Text>
           </View>
           <View style={styles.statCard}>
             <TrendingUp size={20} color="#F59E0B" />
-            <Text style={styles.statNumber}>{userProfile.completionRate}%</Text>
+            <Text style={styles.statNumber}>{userProfile.profileCompletion}%</Text>
             <Text style={styles.statLabel}>Profile Complete</Text>
           </View>
         </View>
 
         {/* Profile Completion */}
         <View style={styles.section}>
-          {renderProfileCompletion()}
+          <View style={styles.completionCard}>
+            <View style={styles.completionHeader}>
+              <Text style={styles.completionTitle}>Profile Strength</Text>
+              <Text style={styles.completionPercentage}>{userProfile.profileCompletion}%</Text>
+            </View>
+            <ProgressBar 
+              progress={userProfile.profileCompletion} 
+              color="#2563EB"
+              height={8}
+              showPercentage={false}
+            />
+            <Text style={styles.completionDescription}>
+              {userProfile.profileCompletion >= 90 
+                ? "Excellent! Your profile is almost complete."
+                : userProfile.profileCompletion >= 70
+                ? "Good progress! Add more details to improve visibility."
+                : "Complete your profile to get 5x more views and better job matches"
+              }
+            </Text>
+            
+            <View style={styles.completionSteps}>
+              {!userProfile.bio && (
+                <TouchableOpacity style={styles.stepItem} onPress={handleEditProfile}>
+                  <View style={styles.stepIcon}>
+                    <User size={16} color="#2563EB" />
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Add Bio</Text>
+                    <Text style={styles.stepDescription}>Write a compelling bio</Text>
+                  </View>
+                  <Plus size={16} color="#6B7280" />
+                </TouchableOpacity>
+              )}
+              
+              {userProfile.skills.length < 5 && (
+                <TouchableOpacity style={styles.stepItem} onPress={handleEditProfile}>
+                  <View style={styles.stepIcon}>
+                    <Award size={16} color="#2563EB" />
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Add More Skills</Text>
+                    <Text style={styles.stepDescription}>Add {5 - userProfile.skills.length} more skills</Text>
+                  </View>
+                  <Plus size={16} color="#6B7280" />
+                </TouchableOpacity>
+              )}
+              
+              {!userProfile.portfolioUrl && (
+                <TouchableOpacity style={styles.stepItem} onPress={handleEditProfile}>
+                  <View style={styles.stepIcon}>
+                    <Globe size={16} color="#2563EB" />
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Add Portfolio</Text>
+                    <Text style={styles.stepDescription}>Showcase your work</Text>
+                  </View>
+                  <Plus size={16} color="#6B7280" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
         </View>
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleDownloadResume}>
             <Download size={16} color="#2563EB" />
             <Text style={styles.actionText}>Download Resume</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleShareProfile}>
             <Share size={16} color="#2563EB" />
             <Text style={styles.actionText}>Share Profile</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.primaryAction]}>
+          <TouchableOpacity style={[styles.actionButton, styles.primaryAction]} onPress={handleEditProfile}>
             <Edit3 size={16} color="#FFFFFF" />
             <Text style={[styles.actionText, styles.primaryActionText]}>Edit Profile</Text>
           </TouchableOpacity>
@@ -178,11 +256,64 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Technical Skills</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={handleEditProfile}>
               <Text style={styles.seeAll}>Manage</Text>
             </TouchableOpacity>
           </View>
-          {renderEmptySkills()}
+          
+          {userProfile.skills.length > 0 ? (
+            <View style={styles.skillsContainer}>
+              {userProfile.skills.map((skill, index) => (
+                <View key={index} style={styles.skillChip}>
+                  <Text style={styles.skillText}>{skill}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptySection}>
+              <Award size={48} color="#D1D5DB" />
+              <Text style={styles.emptySectionTitle}>No Skills Added</Text>
+              <Text style={styles.emptySectionDescription}>
+                Add your technical skills to get better job matches
+              </Text>
+              <TouchableOpacity style={styles.addButton} onPress={handleEditProfile}>
+                <Plus size={16} color="#FFFFFF" />
+                <Text style={styles.addButtonText}>Add Skills</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Experience Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Experience</Text>
+            <TouchableOpacity onPress={handleEditProfile}>
+              <Text style={styles.seeAll}>Manage</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {userProfile.experience.length > 0 ? (
+            <View style={styles.experienceContainer}>
+              {userProfile.experience.map((exp, index) => (
+                <View key={index} style={styles.experienceItem}>
+                  <Text style={styles.experienceText}>{exp}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptySection}>
+              <TrendingUp size={48} color="#D1D5DB" />
+              <Text style={styles.emptySectionTitle}>No Experience Added</Text>
+              <Text style={styles.emptySectionDescription}>
+                Add your work experience and projects
+              </Text>
+              <TouchableOpacity style={styles.addButton} onPress={handleEditProfile}>
+                <Plus size={16} color="#FFFFFF" />
+                <Text style={styles.addButtonText}>Add Experience</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Achievements */}
@@ -193,7 +324,19 @@ export default function ProfileScreen() {
               <Text style={styles.seeAll}>View All</Text>
             </TouchableOpacity>
           </View>
-          {renderEmptyAchievements()}
+          
+          <View style={styles.achievementsGrid}>
+            {achievements.map((achievement, index) => (
+              <Badge
+                key={index}
+                type={achievement.type}
+                title={achievement.title}
+                description={achievement.description}
+                earned={achievement.earned}
+                size="medium"
+              />
+            ))}
+          </View>
         </View>
 
         {/* Settings */}
@@ -237,6 +380,11 @@ export default function ProfileScreen() {
               <Download size={20} color="#6B7280" />
               <Text style={styles.settingButtonText}>Export Data</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity style={styles.settingButton}>
+              <Languages size={20} color="#6B7280" />
+              <Text style={styles.settingButtonText}>Language Settings</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -252,6 +400,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+  },
   profileHeader: {
     position: 'relative',
     height: 200,
@@ -265,6 +423,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 20,
     alignItems: 'center',
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
   },
   avatarPlaceholder: {
     width: 100,
@@ -308,7 +473,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   userName: {
     fontSize: 24,
@@ -319,22 +484,69 @@ const styles = StyleSheet.create({
   editButton: {
     padding: 8,
   },
+  userTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    marginBottom: 8,
+  },
   addInfoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: 8,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   addInfoText: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
+    color: '#9CA3AF',
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  locationText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
     color: '#6B7280',
-    marginLeft: 4,
+    marginLeft: 6,
+  },
+  universityContainer: {
+    marginBottom: 12,
+  },
+  universityText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+  },
+  bio: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#374151',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  socialLinks: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 12,
+  },
+  socialLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  socialLinkText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+    marginLeft: 6,
   },
   joinInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
   },
   joinDate: {
     fontSize: 12,
@@ -417,22 +629,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     color: '#2563EB',
   },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#2563EB',
-    borderRadius: 4,
-  },
   completionDescription: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
+    marginTop: 12,
     marginBottom: 20,
   },
   completionSteps: {
@@ -498,6 +699,35 @@ const styles = StyleSheet.create({
   primaryActionText: {
     color: '#FFFFFF',
   },
+  skillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  skillChip: {
+    backgroundColor: '#EBF4FF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  skillText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#2563EB',
+  },
+  experienceContainer: {
+    gap: 12,
+  },
+  experienceItem: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+  },
+  experienceText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#374151',
+  },
   emptySection: {
     alignItems: 'center',
     paddingVertical: 32,
@@ -530,6 +760,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
     marginLeft: 6,
+  },
+  achievementsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
   settingsContainer: {
     gap: 16,

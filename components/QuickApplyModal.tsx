@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
-import { X, FileText, Send, Clock, CheckCircle } from 'lucide-react-native';
+import { X, FileText, Send, Clock, CircleCheck as CheckCircle } from 'lucide-react-native';
 
 interface QuickApplyModalProps {
   visible: boolean;

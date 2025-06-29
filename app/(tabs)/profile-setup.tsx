@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowRight, ArrowLeft, CheckCircle, User, GraduationCap, MapPin, Briefcase, Award, Globe, Github, Linkedin, Plus, X } from 'lucide-react-native';
+import { ArrowRight, ArrowLeft, CircleCheck as CheckCircle, User, GraduationCap, MapPin, Briefcase, Award, Globe, Github, Linkedin, Plus, X } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { dataService } from '@/services/dataService';
 

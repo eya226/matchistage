@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Target, Award, TrendingUp, Play, CheckCircle, Lock, Star, Clock, Users, Zap, Brain, Code, Database, Palette, MessageSquare, BarChart3, Shield, Globe, Smartphone, Cpu } from 'lucide-react-native';
+import { Target, Award, TrendingUp, Play, CircleCheck as CheckCircle, Lock, Star, Clock, Users, Zap, Brain, Code, Database, Palette, MessageSquare, ChartBar as BarChart3, Shield, Globe, Smartphone, Cpu } from 'lucide-react-native';
 import { router } from 'expo-router';
 import ProgressBar from '@/components/ProgressBar';
 

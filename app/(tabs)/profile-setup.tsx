@@ -90,6 +90,8 @@ const LOCATIONS = [
 
 export default function ProfileSetupScreen() {
   const [currentStep, setCurrentStep] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [newExperience, setNewExperience] = useState('');
   const [profileData, setProfileData] = useState<ProfileSetupData>({
     personalInfo: {
       firstName: 'Eya',
@@ -210,10 +212,14 @@ export default function ProfileSetupScreen() {
 
       Alert.alert(
         'Profile Setup Complete! 🎉',
-        'Your profile has been successfully created. You\'re now ready to discover amazing internship opportunities!',
+        `Congratulations ${profileData.personalInfo.firstName}! Your profile has been successfully created.\n\nProfile Completion: 95%\nSkills Added: ${profileData.skills.length}\nExperience Items: ${profileData.experience.length}\n\nYou're now ready to discover amazing internship opportunities!`,
         [
           {
-            text: 'Start Exploring',
+            text: 'Start Exploring Jobs',
+            onPress: () => router.replace('/(tabs)/jobs')
+          },
+          {
+            text: 'Go to Dashboard',
             onPress: () => router.replace('/(tabs)')
           }
         ]
@@ -327,7 +333,7 @@ export default function ProfileSetupScreen() {
   );
 
   const renderStep3 = () => {
-    const [searchTerm, setSearchTerm] = useState('');
+    // Calculate filtered skills based on current search term and selected skills
     const filteredSkills = AVAILABLE_SKILLS.filter(skill =>
       skill.toLowerCase().includes(searchTerm.toLowerCase()) &&
       !profileData.skills.includes(skill)
@@ -388,58 +394,54 @@ export default function ProfileSetupScreen() {
     );
   };
 
-  const renderStep4 = () => {
-    const [newExperience, setNewExperience] = useState('');
-
-    return (
-      <View style={styles.stepContainer}>
-        <View style={styles.stepHeader}>
-          <Briefcase size={32} color="#2563EB" />
-          <Text style={styles.stepTitle}>Experience</Text>
-          <Text style={styles.stepDescription}>Add your work experience and projects</Text>
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Add Experience</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={newExperience}
-            onChangeText={setNewExperience}
-            placeholder="e.g., Frontend Developer Intern at Company X (Summer 2023)"
-            multiline
-            numberOfLines={3}
-          />
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              addExperience(newExperience);
-              setNewExperience('');
-            }}
-          >
-            <Plus size={16} color="#FFFFFF" />
-            <Text style={styles.addButtonText}>Add Experience</Text>
-          </TouchableOpacity>
-        </View>
-
-        {profileData.experience.length > 0 && (
-          <View style={styles.experienceList}>
-            <Text style={styles.experienceTitle}>Your Experience</Text>
-            {profileData.experience.map((exp, index) => (
-              <View key={index} style={styles.experienceItem}>
-                <Text style={styles.experienceText}>{exp}</Text>
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => removeExperience(index)}
-                >
-                  <X size={16} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
+  const renderStep4 = () => (
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <Briefcase size={32} color="#2563EB" />
+        <Text style={styles.stepTitle}>Experience</Text>
+        <Text style={styles.stepDescription}>Add your work experience and projects</Text>
       </View>
-    );
-  };
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>Add Experience</Text>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          value={newExperience}
+          onChangeText={setNewExperience}
+          placeholder="e.g., Frontend Developer Intern at Company X (Summer 2023)"
+          multiline
+          numberOfLines={3}
+        />
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            addExperience(newExperience);
+            setNewExperience('');
+          }}
+        >
+          <Plus size={16} color="#FFFFFF" />
+          <Text style={styles.addButtonText}>Add Experience</Text>
+        </TouchableOpacity>
+      </View>
+
+      {profileData.experience.length > 0 && (
+        <View style={styles.experienceList}>
+          <Text style={styles.experienceTitle}>Your Experience</Text>
+          {profileData.experience.map((exp, index) => (
+            <View key={index} style={styles.experienceItem}>
+              <Text style={styles.experienceText}>{exp}</Text>
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => removeExperience(index)}
+              >
+                <X size={16} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
 
   const renderStep5 = () => (
     <View style={styles.stepContainer}>

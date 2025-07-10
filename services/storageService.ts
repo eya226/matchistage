@@ -1,10 +1,12 @@
 // Local storage service for offline functionality
 // In a real app, you'd use SQLite or AsyncStorage
+import { UserProgress } from './userDataService';
 
 interface StorageData {
   bookmarkedJobs: number[];
   recentSearches: string[];
   offlineJobs: any[];
+  userData: Record<string, UserProgress>;
   userPreferences: {
     notifications: boolean;
     dataUsage: 'low' | 'normal' | 'high';
@@ -17,6 +19,7 @@ class StorageService {
     bookmarkedJobs: [],
     recentSearches: [],
     offlineJobs: [],
+    userData: {},
     userPreferences: {
       notifications: true,
       dataUsage: 'normal',
@@ -75,12 +78,27 @@ class StorageService {
     this.data.userPreferences = { ...this.data.userPreferences, ...preferences };
   }
 
+  // User-specific data storage
+  async saveUserData(userId: string, userData: UserProgress): Promise<void> {
+    this.data.userData[userId] = userData;
+    // In a real app, this would persist to AsyncStorage or SQLite
+  }
+
+  async getUserData(userId: string): Promise<UserProgress | null> {
+    return this.data.userData[userId] || null;
+  }
+
+  async deleteUserData(userId: string): Promise<void> {
+    delete this.data.userData[userId];
+  }
+
   // Clear all data
   async clearAllData(): Promise<void> {
     this.data = {
       bookmarkedJobs: [],
       recentSearches: [],
       offlineJobs: [],
+      userData: {},
       userPreferences: {
         notifications: true,
         dataUsage: 'normal',

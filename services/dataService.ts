@@ -1,5 +1,6 @@
 // Enhanced data service with real job integration and proper application tracking
 import { realJobsService, RealJob } from './realJobsService';
+import { userDataService } from './userDataService';
 
 export interface Job {
   id: number;
@@ -210,6 +211,16 @@ export const dataService = {
     };
     
     mockApplications.push(newApplication);
+    
+    // Track in user progress
+    await userDataService.addApplication({
+      jobId: applicationData.jobId,
+      jobTitle: applicationData.jobTitle,
+      company: applicationData.company,
+      source: applicationData.source,
+      status: applicationData.status,
+    });
+    
     return newApplication;
   },
 
@@ -217,9 +228,13 @@ export const dataService = {
     await new Promise(resolve => setTimeout(resolve, 300));
     const application = mockApplications.find(app => app.id === id);
     if (application) {
+      const oldStatus = application.status;
       application.status = status;
       application.lastUpdated = new Date().toISOString();
       if (notes) application.notes = notes;
+      
+      // Update user progress
+      await userDataService.updateApplicationStatus(oldStatus, status);
       
       // Set next steps based on status
       switch (status) {
@@ -257,28 +272,30 @@ export const dataService = {
   // Profile - Enhanced with Eya Hamdi data
   async getUserProfile(): Promise<UserProfile> {
     await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Get user-specific profile data
+    const userProfile = userDataService.getUserProfile();
+    if (userProfile) {
+      return userProfile;
+    }
+    
+    // Fallback to mock data for demo
     return mockUserProfile;
   },
 
   async updateUserProfile(updates: Partial<UserProfile>): Promise<UserProfile> {
     await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Update user-specific data
+    const updatedUserData = await userDataService.updateProfile(updates);
+    const userProfile = userDataService.getUserProfile();
+    
+    if (userProfile) {
+      return userProfile;
+    }
+    
+    // Fallback
     Object.assign(mockUserProfile, updates);
-    
-    // Recalculate profile completion
-    const fields = ['name', 'title', 'location', 'university', 'major', 'bio'];
-    const completedFields = fields.filter(field => {
-      const value = mockUserProfile[field as keyof UserProfile];
-      return value && value.toString().trim().length > 0;
-    });
-    
-    const skillsWeight = mockUserProfile.skills.length > 0 ? 1 : 0;
-    const experienceWeight = mockUserProfile.experience.length > 0 ? 1 : 0;
-    const linksWeight = (mockUserProfile.linkedinUrl || mockUserProfile.githubUrl || mockUserProfile.portfolioUrl) ? 1 : 0;
-    
-    mockUserProfile.profileCompletion = Math.round(
-      ((completedFields.length + skillsWeight + experienceWeight + linksWeight) / (fields.length + 3)) * 100
-    );
-    
     return mockUserProfile;
   },
 
@@ -298,6 +315,13 @@ export const dataService = {
   }> {
     await new Promise(resolve => setTimeout(resolve, 400));
     
+    // Get user-specific analytics
+    const userAnalytics = userDataService.getAnalytics();
+    if (userAnalytics) {
+      return userAnalytics;
+    }
+    
+    // Fallback to mock data
     const totalApplications = mockApplications.length;
     const acceptedApplications = mockApplications.filter(app => app.status === 'accepted').length;
     const pendingApplications = mockApplications.filter(app => app.status === 'pending').length;

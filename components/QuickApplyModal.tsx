@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
-import { X, FileText, Send, Clock, CircleCheck as CheckCircle } from 'lucide-react-native';
+import { X, FileText, Send, Clock, CircleCheck as CheckCircle, Sparkles, Upload, File, Trash2 } from 'lucide-react-native';
 
 interface QuickApplyModalProps {
   visible: boolean;
@@ -10,6 +10,8 @@ interface QuickApplyModalProps {
     title: string;
     company: string;
     location: string;
+    skills?: string[];
+    description?: string;
   };
   onApply: (applicationData: any) => void;
 }
@@ -17,14 +19,108 @@ interface QuickApplyModalProps {
 export default function QuickApplyModal({ visible, onClose, job, onApply }: QuickApplyModalProps) {
   const [coverLetter, setCoverLetter] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [step, setStep] = useState<'form' | 'success'>('form');
+  const [uploadedResume, setUploadedResume] = useState<{name: string; size: string} | null>(null);
+
+  const generateAICoverLetter = async () => {
+    setIsGeneratingCoverLetter(true);
+    
+    // Simulate AI generation
+    setTimeout(() => {
+      const aiGeneratedLetter = `Dear Hiring Manager,
+
+I am writing to express my strong interest in the ${job.title} position at ${job.company}. As a passionate software engineering student with hands-on experience in modern technologies, I am excited about the opportunity to contribute to your team.
+
+My technical background includes proficiency in ${job.skills?.slice(0, 3).join(', ') || 'JavaScript, React, and Python'}, which aligns perfectly with the requirements for this role. Through my academic projects and internship experience, I have developed strong problem-solving skills and the ability to work effectively in collaborative environments.
+
+What particularly attracts me to ${job.company} is your commitment to innovation and excellence in the technology sector. I am eager to bring my enthusiasm for learning and my technical skills to contribute to your team's success while gaining valuable industry experience.
+
+I am available for an interview at your convenience and look forward to discussing how my skills and passion can contribute to ${job.company}'s continued success.
+
+Thank you for considering my application.
+
+Best regards,
+Eya Hamdi`;
+
+      setCoverLetter(aiGeneratedLetter);
+      setIsGeneratingCoverLetter(false);
+      
+      Alert.alert(
+        'Cover Letter Generated! ✨',
+        'AI has generated a personalized cover letter based on the job requirements. You can edit it before submitting.',
+        [{ text: 'Great!' }]
+      );
+    }, 2000);
+  };
+
+  const handleResumeUpload = () => {
+    Alert.alert(
+      'Upload Resume',
+      'Choose how to upload your resume:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Choose from Files', onPress: () => simulateFileUpload() },
+        { text: 'Take Photo', onPress: () => simulatePhotoUpload() },
+      ]
+    );
+  };
+
+  const simulateFileUpload = () => {
+    // Simulate file upload
+    setTimeout(() => {
+      setUploadedResume({
+        name: 'Eya_Hamdi_Resume.pdf',
+        size: '245 KB'
+      });
+      Alert.alert('Success', 'Resume uploaded successfully!');
+    }, 1000);
+  };
+
+  const simulatePhotoUpload = () => {
+    // Simulate photo upload
+    setTimeout(() => {
+      setUploadedResume({
+        name: 'Resume_Photo.jpg',
+        size: '1.2 MB'
+      });
+      Alert.alert('Success', 'Resume photo uploaded successfully!');
+    }, 1000);
+  };
+
+  const removeResume = () => {
+    Alert.alert(
+      'Remove Resume',
+      'Are you sure you want to remove the uploaded resume?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => setUploadedResume(null) }
+      ]
+    );
+  };
 
   const handleSubmit = async () => {
     if (!coverLetter.trim()) {
-      Alert.alert('Error', 'Please write a brief cover letter');
+      Alert.alert('Error', 'Please write a cover letter or generate one using AI');
       return;
     }
 
+    if (!uploadedResume) {
+      Alert.alert(
+        'No Resume Attached',
+        'You haven\'t uploaded a resume. Do you want to continue without one?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Continue', onPress: () => submitApplication() }
+        ]
+      );
+      return;
+    }
+
+    submitApplication();
+  };
+
+  const submitApplication = async () => {
     setIsSubmitting(true);
     
     // Simulate API call
@@ -33,7 +129,9 @@ export default function QuickApplyModal({ visible, onClose, job, onApply }: Quic
         jobId: job.id,
         coverLetter: coverLetter.trim(),
         appliedAt: new Date().toISOString(),
-        status: 'pending'
+        status: 'pending',
+        resumeAttached: !!uploadedResume,
+        resumeName: uploadedResume?.name || null,
       };
       
       onApply(applicationData);
@@ -44,8 +142,9 @@ export default function QuickApplyModal({ visible, onClose, job, onApply }: Quic
       setTimeout(() => {
         setStep('form');
         setCoverLetter('');
+        setUploadedResume(null);
         onClose();
-      }, 2000);
+      }, 3000);
     }, 1500);
   };
 
@@ -60,31 +159,91 @@ export default function QuickApplyModal({ visible, onClose, job, onApply }: Quic
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Application</Text>
         <Text style={styles.sectionDescription}>
-          Your profile and resume will be automatically attached. Add a personal message below.
+          Upload your resume and write a personalized cover letter to stand out.
         </Text>
       </View>
 
+      {/* Resume Upload Section */}
+      <View style={styles.resumeSection}>
+        <View style={styles.resumeHeader}>
+          <Text style={styles.resumeTitle}>Resume *</Text>
+          {!uploadedResume && (
+            <TouchableOpacity style={styles.uploadButton} onPress={handleResumeUpload}>
+              <Upload size={16} color="#2563EB" />
+              <Text style={styles.uploadButtonText}>Upload Resume</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        
+        {uploadedResume ? (
+          <View style={styles.uploadedFile}>
+            <View style={styles.fileInfo}>
+              <File size={20} color="#10B981" />
+              <View style={styles.fileDetails}>
+                <Text style={styles.fileName}>{uploadedResume.name}</Text>
+                <Text style={styles.fileSize}>{uploadedResume.size}</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.removeButton} onPress={removeResume}>
+              <Trash2 size={16} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.uploadPlaceholder}>
+            <Upload size={32} color="#D1D5DB" />
+            <Text style={styles.uploadPlaceholderText}>No resume uploaded</Text>
+            <Text style={styles.uploadPlaceholderSubtext}>PDF, DOC, or image files accepted</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Cover Letter Section */}
       <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>Cover Letter *</Text>
+        <View style={styles.coverLetterHeader}>
+          <Text style={styles.inputLabel}>Cover Letter *</Text>
+          <TouchableOpacity 
+            style={styles.aiButton} 
+            onPress={generateAICoverLetter}
+            disabled={isGeneratingCoverLetter}
+          >
+            <Sparkles size={16} color="#8B5CF6" />
+            <Text style={styles.aiButtonText}>
+              {isGeneratingCoverLetter ? 'Generating...' : 'AI Generate'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
         <TextInput
           style={styles.textArea}
-          placeholder="Write a brief message explaining why you're interested in this position..."
+          placeholder="Write a personalized message explaining why you're interested in this position..."
           value={coverLetter}
           onChangeText={setCoverLetter}
           multiline
-          numberOfLines={6}
+          numberOfLines={8}
           textAlignVertical="top"
         />
-        <Text style={styles.characterCount}>{coverLetter.length}/500</Text>
-      </View>
-
-      <View style={styles.attachments}>
-        <View style={styles.attachmentItem}>
-          <FileText size={16} color="#2563EB" />
-          <Text style={styles.attachmentText}>Resume.pdf</Text>
-          <Text style={styles.attachmentStatus}>✓ Attached</Text>
+        <View style={styles.characterCountContainer}>
+          <Text style={styles.characterCount}>{coverLetter.length}/1000</Text>
+          {coverLetter.length > 0 && (
+            <TouchableOpacity 
+              style={styles.clearButton}
+              onPress={() => setCoverLetter('')}
+            >
+              <Text style={styles.clearButtonText}>Clear</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
+
+      {/* AI Tips */}
+      {isGeneratingCoverLetter && (
+        <View style={styles.aiTips}>
+          <Sparkles size={16} color="#8B5CF6" />
+          <Text style={styles.aiTipsText}>
+            AI is analyzing the job requirements and crafting a personalized cover letter...
+          </Text>
+        </View>
+      )}
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
@@ -115,6 +274,11 @@ export default function QuickApplyModal({ visible, onClose, job, onApply }: Quic
       <Text style={styles.successMessage}>
         Your application for {job.title} at {job.company} has been successfully submitted.
       </Text>
+      {uploadedResume && (
+        <Text style={styles.successNote}>
+          ✓ Resume attached: {uploadedResume.name}
+        </Text>
+      )}
       <Text style={styles.successNote}>
         You'll receive updates on your application status via notifications.
       </Text>
@@ -213,14 +377,118 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     lineHeight: 20,
   },
+  resumeSection: {
+    marginBottom: 24,
+  },
+  resumeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  resumeTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+  },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EBF4FF',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  uploadButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#2563EB',
+    marginLeft: 6,
+  },
+  uploadedFile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0F9FF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  fileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  fileDetails: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  fileName: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+  },
+  fileSize: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  removeButton: {
+    padding: 8,
+  },
+  uploadPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    paddingVertical: 32,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+  },
+  uploadPlaceholderText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#9CA3AF',
+    marginTop: 8,
+  },
+  uploadPlaceholderSubtext: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF',
+    marginTop: 4,
+  },
   inputContainer: {
     marginBottom: 20,
+  },
+  coverLetterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   inputLabel: {
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#374151',
-    marginBottom: 8,
+  },
+  aiButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#8B5CF6',
+  },
+  aiButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#8B5CF6',
+    marginLeft: 6,
   },
   textArea: {
     backgroundColor: '#F9FAFB',
@@ -231,36 +499,44 @@ const styles = StyleSheet.create({
     color: '#111827',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    minHeight: 120,
+    minHeight: 160,
+  },
+  characterCountContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
   },
   characterCount: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#9CA3AF',
-    textAlign: 'right',
-    marginTop: 4,
   },
-  attachments: {
-    marginBottom: 30,
+  clearButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
-  attachmentItem: {
+  clearButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#EF4444',
+  },
+  aiTips: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F8FAFC',
     borderRadius: 8,
     padding: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#8B5CF6',
   },
-  attachmentText: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: '#2563EB',
-    flex: 1,
-    marginLeft: 8,
-  },
-  attachmentStatus: {
+  aiTipsText: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#10B981',
+    color: '#8B5CF6',
+    marginLeft: 8,
+    flex: 1,
   },
   actions: {
     flexDirection: 'row',
@@ -324,8 +600,9 @@ const styles = StyleSheet.create({
   successNote: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#9CA3AF',
+    color: '#10B981',
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: 8,
   },
 });

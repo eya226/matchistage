@@ -57,7 +57,7 @@ export default function SignUpScreen() {
     setIsLoading(true);
     
     // Simulate API call
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsLoading(false);
       
       // Initialize new user with signup data

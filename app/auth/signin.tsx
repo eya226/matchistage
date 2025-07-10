@@ -37,7 +37,7 @@ export default function SignInScreen() {
     setIsLoading(true);
     
     // Simulate API call
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsLoading(false);
       
       // Initialize user session with real user data

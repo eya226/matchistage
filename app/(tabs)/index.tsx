@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TrendingUp, Briefcase, Target, Award, Clock, MapPin, Bell, Plus, ArrowRight, Eye, Settings, User, CreditCard as Edit3 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { dataService, Job } from '@/services/dataService';
+import { userDataService } from '@/services/userDataService';
 import ProgressBar from '@/components/ProgressBar';
 import Badge from '@/components/Badge';
 import MatchIndicator from '@/components/MatchIndicator';
@@ -40,6 +41,9 @@ export default function HomeScreen() {
       setRecommendedJobs(jobs.slice(0, 3));
       setAnalytics(analyticsData);
       setProfileCompletion(profile.profileCompletion);
+      
+      // Increment profile views for analytics
+      await userDataService.incrementProfileViews();
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {

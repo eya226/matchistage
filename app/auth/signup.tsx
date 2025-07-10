@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Keyboa
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, User, GraduationCap, Briefcase } from 'lucide-react-native';
+import { userDataService } from '@/services/userDataService';
 
 export default function SignUpScreen() {
   const [formData, setFormData] = useState({
@@ -58,6 +59,18 @@ export default function SignUpScreen() {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
+      
+      // Initialize new user with signup data
+      const userId = `user_${formData.email.replace('@', '_').replace('.', '_')}`;
+      await userDataService.initializeUser(userId, formData.email);
+      
+      // Update profile with signup data
+      await userDataService.updateProfile({
+        name: `${formData.firstName} ${formData.lastName}`,
+        university: formData.university,
+        major: formData.major,
+      });
+      
       // Navigate to main app
       router.replace('/(tabs)');
     }, 2000);

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvo
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, Briefcase } from 'lucide-react-native';
+import { userDataService } from '@/services/userDataService';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -38,6 +39,11 @@ export default function SignInScreen() {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
+      
+      // Initialize user session with real user data
+      const userId = `user_${email.replace('@', '_').replace('.', '_')}`;
+      await userDataService.initializeUser(userId, email);
+      
       // Navigate to main app
       router.replace('/(tabs)');
     }, 1500);

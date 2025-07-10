@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Target, Award, TrendingUp, Play, CircleCheck as CheckCircle, Lock, Star, Clock, Users, Zap, Brain, Code, Database, Palette, MessageSquare, ChartBar as BarChart3, Shield, Globe, Smartphone, Cpu } from 'lucide-react-native';
 import { router } from 'expo-router';
 import ProgressBar from '@/components/ProgressBar';
+import { userDataService } from '@/services/userDataService';
 
 interface Skill {
   id: string;
@@ -418,16 +419,19 @@ export default function SkillsScreen() {
   };
 
   const startLearning = (skill: Skill) => {
-    // Simulate learning progress
+    // Update user-specific progress
+    const newProgress = Math.min(100, skill.progress + 10);
+    const newCompletedLessons = Math.min(skill.lessons, skill.completedLessons + 1);
+    
+    userDataService.updateSkillProgress(skill.id, newProgress, newCompletedLessons);
+    
+    // Update local state
     const updatedSkills = skills.map(s => {
       if (s.id === skill.id) {
-        const newProgress = Math.min(100, s.progress + 10);
-        const newCompletedLessons = Math.min(s.lessons, s.completedLessons + 1);
         return { ...s, progress: newProgress, completedLessons: newCompletedLessons };
       }
       return s;
     });
-
     setSkills(updatedSkills);
     
     Alert.alert(

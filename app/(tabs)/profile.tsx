@@ -5,6 +5,7 @@ import { CreditCard as Edit3, MapPin, Calendar, Award, TrendingUp, Settings, Sta
 import { dataService, UserProfile } from '@/services/dataService';
 import ProgressBar from '@/components/ProgressBar';
 import Badge from '@/components/Badge';
+import { userDataService } from '@/services/userDataService';
 
 export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -128,10 +129,10 @@ export default function ProfileScreen() {
   }
 
   const achievements = [
-    { type: 'achievement' as const, title: 'Profile Complete', description: '85% completed', earned: true },
-    { type: 'skill' as const, title: 'Skill Master', description: '6 skills added', earned: true },
+    { type: 'achievement' as const, title: 'Profile Complete', description: `${userProfile.profileCompletion}% completed`, earned: userProfile.profileCompletion >= 50 },
+    { type: 'skill' as const, title: 'Skill Master', description: `${userProfile.skills.length} skills added`, earned: userProfile.skills.length >= 5 },
     { type: 'milestone' as const, title: 'First Application', description: 'Applied to first job', earned: analytics?.totalApplications > 0 },
-    { type: 'social' as const, title: 'Networker', description: 'Connect with others', earned: false },
+    { type: 'social' as const, title: 'Networker', description: 'Connect with others', earned: analytics?.totalApplications > 0 },
   ];
 
   return (

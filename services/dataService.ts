@@ -1,6 +1,7 @@
 // Enhanced data service with real job integration and proper application tracking
 import { realJobsService, RealJob } from './realJobsService';
 import { userDataService } from './userDataService';
+import { skillsLearningService } from './skillsLearningService';
 
 export interface Job {
   id: number;
@@ -271,7 +272,7 @@ export const dataService = {
 
   // Profile - Enhanced with Eya Hamdi data
   async getUserProfile(): Promise<UserProfile> {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Get user-specific profile data
     const userProfile = userDataService.getUserProfile();
@@ -279,12 +280,26 @@ export const dataService = {
       return userProfile;
     }
     
-    // Fallback to mock data for demo
-    return mockUserProfile;
+    // Return default profile for new users
+    return {
+      id: 1,
+      name: 'New User',
+      email: 'user@example.com',
+      title: 'Student',
+      location: 'Tunis, Tunisia',
+      university: 'University',
+      major: 'Computer Science',
+      skills: [],
+      experience: [],
+      achievements: [],
+      profileCompletion: 15,
+      avatar: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+      coverImage: 'https://images.pexels.com/photos/3182773/pexels-photo-3182773.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&fit=crop',
+    };
   },
 
   async updateUserProfile(updates: Partial<UserProfile>): Promise<UserProfile> {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Update user-specific data
     const updatedUserData = await userDataService.updateProfile(updates);
@@ -294,9 +309,7 @@ export const dataService = {
       return userProfile;
     }
     
-    // Fallback
-    Object.assign(mockUserProfile, updates);
-    return mockUserProfile;
+    throw new Error('No user profile found');
   },
 
   // Analytics - Enhanced with real application data
@@ -313,7 +326,7 @@ export const dataService = {
     topSkillsMatched: string[];
     applicationsBySource: Record<string, number>;
   }> {
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Get user-specific analytics
     const userAnalytics = userDataService.getAnalytics();
@@ -321,32 +334,19 @@ export const dataService = {
       return userAnalytics;
     }
     
-    // Fallback to mock data
-    const totalApplications = mockApplications.length;
-    const acceptedApplications = mockApplications.filter(app => app.status === 'accepted').length;
-    const pendingApplications = mockApplications.filter(app => app.status === 'pending').length;
-    const reviewedApplications = mockApplications.filter(app => app.status === 'reviewed').length;
-    const rejectedApplications = mockApplications.filter(app => app.status === 'rejected').length;
-    const interviewApplications = mockApplications.filter(app => app.status === 'interview').length;
-    
-    // Calculate application distribution by source
-    const applicationsBySource: Record<string, number> = {};
-    mockApplications.forEach(app => {
-      applicationsBySource[app.source] = (applicationsBySource[app.source] || 0) + 1;
-    });
-    
+    // Return default analytics for new users
     return {
-      totalApplications,
-      acceptedApplications,
-      pendingApplications,
-      reviewedApplications,
-      rejectedApplications,
-      interviewApplications,
-      profileViews: 127, // Mock data
-      responseRate: totalApplications > 0 ? Math.round(((acceptedApplications + interviewApplications) / totalApplications) * 100) : 0,
-      averageResponseTime: 5, // days
-      topSkillsMatched: ['JavaScript', 'React', 'Python', 'SQL', 'Git'],
-      applicationsBySource
+      totalApplications: 0,
+      acceptedApplications: 0,
+      pendingApplications: 0,
+      reviewedApplications: 0,
+      rejectedApplications: 0,
+      interviewApplications: 0,
+      profileViews: 0,
+      responseRate: 0,
+      averageResponseTime: 0,
+      topSkillsMatched: [],
+      applicationsBySource: {}
     };
   },
 

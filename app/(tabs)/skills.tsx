@@ -1,43 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Target, Award, TrendingUp, Play, CircleCheck as CheckCircle, Lock, Star, Clock, Users, Zap, Brain, Code, Database, Palette, MessageSquare, ChartBar as BarChart3, Shield, Globe, Smartphone, Cpu } from 'lucide-react-native';
+import { Target, Award, TrendingUp, Play, CircleCheck as CheckCircle, Lock, Star, Clock, Users, Zap, Brain, Code, Database, Palette, MessageSquare, ChartBar as BarChart3, Shield, Globe, Smartphone, Cpu, Search, Filter, BookOpen } from 'lucide-react-native';
 import { router } from 'expo-router';
 import ProgressBar from '@/components/ProgressBar';
+import { skillsLearningService, SkillPath, Lesson } from '@/services/skillsLearningService';
 import { userDataService } from '@/services/userDataService';
-
-interface Skill {
-  id: string;
-  name: string;
-  category: 'frontend' | 'backend' | 'mobile' | 'data' | 'design' | 'soft' | 'devops' | 'ai';
-  icon: any;
-  color: string;
-  level: 'beginner' | 'intermediate' | 'advanced';
-  progress: number;
-  lessons: number;
-  completedLessons: number;
-  estimatedTime: string;
-  description: string;
-  unlocked: boolean;
-  prerequisites?: string[];
-}
-
-interface InterviewQuestion {
-  id: string;
-  question: string;
-  category: 'technical' | 'behavioral' | 'situational';
-  difficulty: 'easy' | 'medium' | 'hard';
-  tips: string[];
-  sampleAnswer?: string;
-}
+import LessonModal from '@/components/LessonModal';
 
 export default function SkillsScreen() {
-  const [selectedTab, setSelectedTab] = useState('skills');
+  const [selectedTab, setSelectedTab] = useState('discover');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>([]);
-  const [currentQuestion, setCurrentQuestion] = useState<InterviewQuestion | null>(null);
-  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [skillPaths, setSkillPaths] = useState<SkillPath[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [selectedSkill, setSelectedSkill] = useState<SkillPath | null>(null);
+  const [showSkillModal, setShowSkillModal] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [showLessonModal, setShowLessonModal] = useState(false);
   const [userProgress, setUserProgress] = useState({
     totalSkills: 0,
     completedSkills: 0,
@@ -48,490 +28,348 @@ export default function SkillsScreen() {
 
   useEffect(() => {
     loadSkillsData();
-    loadInterviewQuestions();
   }, []);
 
-  const loadSkillsData = () => {
-    const skillsData: Skill[] = [
-      // Frontend Skills
-      {
-        id: 'react',
-        name: 'React.js',
-        category: 'frontend',
-        icon: Code,
-        color: '#61DAFB',
-        level: 'intermediate',
-        progress: 75,
-        lessons: 24,
-        completedLessons: 18,
-        estimatedTime: '6 hours',
-        description: 'Master React components, hooks, and state management',
-        unlocked: true,
-      },
-      {
-        id: 'javascript',
-        name: 'JavaScript ES6+',
-        category: 'frontend',
-        icon: Code,
-        color: '#F7DF1E',
-        level: 'intermediate',
-        progress: 85,
-        lessons: 30,
-        completedLessons: 25,
-        estimatedTime: '8 hours',
-        description: 'Advanced JavaScript concepts and modern syntax',
-        unlocked: true,
-      },
-      {
-        id: 'typescript',
-        name: 'TypeScript',
-        category: 'frontend',
-        icon: Code,
-        color: '#3178C6',
-        level: 'beginner',
-        progress: 30,
-        lessons: 20,
-        completedLessons: 6,
-        estimatedTime: '5 hours',
-        description: 'Type-safe JavaScript development',
-        unlocked: true,
-        prerequisites: ['javascript'],
-      },
-      {
-        id: 'vue',
-        name: 'Vue.js',
-        category: 'frontend',
-        icon: Code,
-        color: '#4FC08D',
-        level: 'beginner',
-        progress: 0,
-        lessons: 18,
-        completedLessons: 0,
-        estimatedTime: '4 hours',
-        description: 'Progressive JavaScript framework',
-        unlocked: false,
-        prerequisites: ['javascript'],
-      },
-
-      // Backend Skills
-      {
-        id: 'nodejs',
-        name: 'Node.js',
-        category: 'backend',
-        icon: Database,
-        color: '#339933',
-        level: 'intermediate',
-        progress: 60,
-        lessons: 22,
-        completedLessons: 13,
-        estimatedTime: '7 hours',
-        description: 'Server-side JavaScript development',
-        unlocked: true,
-      },
-      {
-        id: 'python',
-        name: 'Python',
-        category: 'backend',
-        icon: Database,
-        color: '#3776AB',
-        level: 'advanced',
-        progress: 90,
-        lessons: 35,
-        completedLessons: 31,
-        estimatedTime: '10 hours',
-        description: 'Versatile programming language',
-        unlocked: true,
-      },
-      {
-        id: 'sql',
-        name: 'SQL & Databases',
-        category: 'backend',
-        icon: Database,
-        color: '#336791',
-        level: 'intermediate',
-        progress: 70,
-        lessons: 25,
-        completedLessons: 17,
-        estimatedTime: '6 hours',
-        description: 'Database design and querying',
-        unlocked: true,
-      },
-
-      // Mobile Skills
-      {
-        id: 'react-native',
-        name: 'React Native',
-        category: 'mobile',
-        icon: Smartphone,
-        color: '#61DAFB',
-        level: 'beginner',
-        progress: 40,
-        lessons: 20,
-        completedLessons: 8,
-        estimatedTime: '5 hours',
-        description: 'Cross-platform mobile development',
-        unlocked: true,
-        prerequisites: ['react'],
-      },
-      {
-        id: 'flutter',
-        name: 'Flutter',
-        category: 'mobile',
-        icon: Smartphone,
-        color: '#02569B',
-        level: 'beginner',
-        progress: 0,
-        lessons: 18,
-        completedLessons: 0,
-        estimatedTime: '4 hours',
-        description: 'Google\'s UI toolkit for mobile',
-        unlocked: false,
-      },
-
-      // Data Science
-      {
-        id: 'machine-learning',
-        name: 'Machine Learning',
-        category: 'ai',
-        icon: Brain,
-        color: '#FF6B6B',
-        level: 'beginner',
-        progress: 25,
-        lessons: 30,
-        completedLessons: 7,
-        estimatedTime: '12 hours',
-        description: 'AI and ML fundamentals',
-        unlocked: true,
-        prerequisites: ['python'],
-      },
-      {
-        id: 'data-analysis',
-        name: 'Data Analysis',
-        category: 'data',
-        icon: BarChart3,
-        level: 'intermediate',
-        color: '#4ECDC4',
-        progress: 55,
-        lessons: 28,
-        completedLessons: 15,
-        estimatedTime: '8 hours',
-        description: 'Statistical analysis and visualization',
-        unlocked: true,
-      },
-
-      // Design Skills
-      {
-        id: 'ui-ux',
-        name: 'UI/UX Design',
-        category: 'design',
-        icon: Palette,
-        color: '#FF69B4',
-        level: 'beginner',
-        progress: 35,
-        lessons: 22,
-        completedLessons: 8,
-        estimatedTime: '6 hours',
-        description: 'User interface and experience design',
-        unlocked: true,
-      },
-
-      // DevOps
-      {
-        id: 'docker',
-        name: 'Docker',
-        category: 'devops',
-        icon: Cpu,
-        color: '#2496ED',
-        level: 'beginner',
-        progress: 20,
-        lessons: 15,
-        completedLessons: 3,
-        estimatedTime: '4 hours',
-        description: 'Containerization technology',
-        unlocked: true,
-      },
-      {
-        id: 'aws',
-        name: 'AWS Cloud',
-        category: 'devops',
-        icon: Globe,
-        color: '#FF9900',
-        level: 'beginner',
-        progress: 0,
-        lessons: 25,
-        completedLessons: 0,
-        estimatedTime: '8 hours',
-        description: 'Amazon Web Services',
-        unlocked: false,
-        prerequisites: ['docker'],
-      },
-
-      // Soft Skills
-      {
-        id: 'communication',
-        name: 'Communication',
-        category: 'soft',
-        icon: MessageSquare,
-        color: '#9B59B6',
-        level: 'intermediate',
-        progress: 80,
-        lessons: 15,
-        completedLessons: 12,
-        estimatedTime: '3 hours',
-        description: 'Professional communication skills',
-        unlocked: true,
-      },
-      {
-        id: 'leadership',
-        name: 'Leadership',
-        category: 'soft',
-        icon: Users,
-        color: '#E74C3C',
-        level: 'beginner',
-        progress: 45,
-        lessons: 18,
-        completedLessons: 8,
-        estimatedTime: '4 hours',
-        description: 'Team leadership and management',
-        unlocked: true,
-      },
-    ];
-
-    setSkills(skillsData);
-    setUserProgress({
-      totalSkills: skillsData.length,
-      completedSkills: skillsData.filter(s => s.progress === 100).length,
-      currentStreak: 7,
-      totalXP: 1250,
-      level: 3,
-    });
-  };
-
-  const loadInterviewQuestions = () => {
-    const questions: InterviewQuestion[] = [
-      {
-        id: '1',
-        question: 'Tell me about yourself and your background in software development.',
-        category: 'behavioral',
-        difficulty: 'easy',
-        tips: [
-          'Keep it concise (2-3 minutes)',
-          'Focus on relevant experience',
-          'Mention your passion for technology',
-          'End with why you\'re interested in this role'
-        ],
-        sampleAnswer: 'I\'m a computer science student at ESPRIT with a passion for full-stack development. I\'ve completed several projects including an e-commerce platform using React and Node.js, and I\'ve been working as a programming tutor. I\'m particularly interested in this internship because...'
-      },
-      {
-        id: '2',
-        question: 'Explain the difference between let, const, and var in JavaScript.',
-        category: 'technical',
-        difficulty: 'medium',
-        tips: [
-          'Explain scope differences',
-          'Mention hoisting behavior',
-          'Give practical examples',
-          'Discuss when to use each'
-        ],
-      },
-      {
-        id: '3',
-        question: 'How would you handle a situation where you disagree with your team lead?',
-        category: 'situational',
-        difficulty: 'medium',
-        tips: [
-          'Show respect for authority',
-          'Emphasize communication',
-          'Mention data-driven decisions',
-          'Show willingness to compromise'
-        ],
-      },
-      {
-        id: '4',
-        question: 'What is the difference between SQL and NoSQL databases?',
-        category: 'technical',
-        difficulty: 'medium',
-        tips: [
-          'Explain structure differences',
-          'Mention use cases for each',
-          'Discuss scalability',
-          'Give examples of each type'
-        ],
-      },
-      {
-        id: '5',
-        question: 'Describe a challenging project you worked on and how you overcame obstacles.',
-        category: 'behavioral',
-        difficulty: 'hard',
-        tips: [
-          'Use the STAR method',
-          'Be specific about challenges',
-          'Highlight problem-solving skills',
-          'Mention lessons learned'
-        ],
-      },
-    ];
-
-    setInterviewQuestions(questions);
+  const loadSkillsData = async () => {
+    try {
+      setLoading(true);
+      const skills = await skillsLearningService.getSkillPaths();
+      setSkillPaths(skills);
+      
+      // Load user progress
+      const userData = userDataService.getCurrentUserData();
+      if (userData) {
+        setUserProgress({
+          totalSkills: skills.length,
+          completedSkills: Object.keys(userData.skillsProgress).filter(
+            skillId => userData.skillsProgress[skillId].progress >= 100
+          ).length,
+          currentStreak: userData.learningStats.currentStreak,
+          totalXP: userData.learningStats.totalXP,
+          level: userData.learningStats.level,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading skills:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getFilteredSkills = () => {
-    if (selectedCategory === 'all') return skills;
-    return skills.filter(skill => skill.category === selectedCategory);
+    let filtered = skillPaths;
+    
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(skill => skill.category === selectedCategory);
+    }
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(skill =>
+        skill.name.toLowerCase().includes(query) ||
+        skill.description.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
   };
 
   const categories = [
     { id: 'all', name: 'All Skills', icon: Target, color: '#6B7280' },
-    { id: 'frontend', name: 'Frontend', icon: Code, color: '#3B82F6' },
-    { id: 'backend', name: 'Backend', icon: Database, color: '#10B981' },
+    { id: 'programming', name: 'Programming', icon: Code, color: '#3B82F6' },
+    { id: 'web', name: 'Web Dev', icon: Globe, color: '#10B981' },
     { id: 'mobile', name: 'Mobile', icon: Smartphone, color: '#8B5CF6' },
-    { id: 'data', name: 'Data', icon: BarChart3, color: '#F59E0B' },
-    { id: 'ai', name: 'AI/ML', icon: Brain, color: '#EF4444' },
+    { id: 'data', name: 'Data Science', icon: BarChart3, color: '#F59E0B' },
     { id: 'design', name: 'Design', icon: Palette, color: '#EC4899' },
     { id: 'devops', name: 'DevOps', icon: Cpu, color: '#06B6D4' },
-    { id: 'soft', name: 'Soft Skills', icon: MessageSquare, color: '#84CC16' },
   ];
 
   const tabs = [
-    { id: 'skills', name: 'Skill Builder', icon: Target },
-    { id: 'interview', name: 'Interview Prep', icon: MessageSquare },
+    { id: 'discover', name: 'Discover', icon: Target },
+    { id: 'learning', name: 'My Learning', icon: BookOpen },
     { id: 'progress', name: 'Progress', icon: TrendingUp },
   ];
 
-  const handleStartSkill = (skill: Skill) => {
-    if (!skill.unlocked) {
-      Alert.alert(
-        'Skill Locked',
-        `Complete ${skill.prerequisites?.join(', ')} first to unlock ${skill.name}`,
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
-    Alert.alert(
-      `Start ${skill.name}`,
-      `Continue your ${skill.name} journey?\n\nProgress: ${skill.progress}%\nLessons: ${skill.completedLessons}/${skill.lessons}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Continue Learning', onPress: () => startLearning(skill) }
-      ]
-    );
+  const handleSkillPress = (skill: SkillPath) => {
+    setSelectedSkill(skill);
+    setShowSkillModal(true);
   };
 
-  const startLearning = (skill: Skill) => {
-    // Update user-specific progress
-    const newProgress = Math.min(100, skill.progress + 10);
-    const newCompletedLessons = Math.min(skill.lessons, skill.completedLessons + 1);
-    
-    userDataService.updateSkillProgress(skill.id, newProgress, newCompletedLessons);
-    
-    // Update local state
-    const updatedSkills = skills.map(s => {
-      if (s.id === skill.id) {
-        return { ...s, progress: newProgress, completedLessons: newCompletedLessons };
+  const handleLessonPress = async (skill: SkillPath, lesson: Lesson) => {
+    // Check prerequisites
+    if (lesson.prerequisites && lesson.prerequisites.length > 0) {
+      const hasPrerequisites = lesson.prerequisites.every(prereqId => {
+        const prereqLesson = skill.lessons.find(l => l.id === prereqId);
+        return prereqLesson?.completed;
+      });
+      
+      if (!hasPrerequisites) {
+        Alert.alert(
+          'Prerequisites Required',
+          `Complete the previous lessons first: ${lesson.prerequisites.join(', ')}`,
+          [{ text: 'OK' }]
+        );
+        return;
       }
-      return s;
-    });
-    setSkills(updatedSkills);
+    }
     
-    Alert.alert(
-      'Great Progress!',
-      `You've completed another lesson in ${skill.name}!\n\n+50 XP earned\n+1 lesson completed`,
-      [{ text: 'Continue' }]
-    );
+    setSelectedLesson(lesson);
+    setShowLessonModal(true);
   };
 
-  const handleInterviewQuestion = (question: InterviewQuestion) => {
-    setCurrentQuestion(question);
-    setShowQuestionModal(true);
+  const handleLessonComplete = async (score: number) => {
+    if (!selectedLesson || !selectedSkill) return;
+    
+    try {
+      // Mark lesson as complete
+      await skillsLearningService.completeLesson(selectedSkill.id, selectedLesson.id, score);
+      
+      // Update user progress
+      const progress = await skillsLearningService.getUserProgress(selectedSkill.id);
+      await userDataService.updateSkillProgress(
+        selectedSkill.id,
+        (progress.completedLessons / progress.totalLessons) * 100,
+        progress.completedLessons
+      );
+      
+      // Refresh data
+      await loadSkillsData();
+      
+      Alert.alert(
+        'Lesson Complete! 🎉',
+        `You earned ${selectedLesson.xp} XP and scored ${score}%!\n\nKeep up the great work!`,
+        [{ text: 'Continue' }]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save progress. Please try again.');
+    }
   };
 
-  const getRandomQuestion = () => {
-    const randomIndex = Math.floor(Math.random() * interviewQuestions.length);
-    handleInterviewQuestion(interviewQuestions[randomIndex]);
+  const handleEnrollInSkill = async (skill: SkillPath) => {
+    try {
+      await skillsLearningService.enrollInSkill(skill.id);
+      Alert.alert(
+        'Enrolled Successfully! 🎓',
+        `You're now enrolled in ${skill.name}. Start with the first lesson to begin your learning journey.`,
+        [
+          { text: 'Start Learning', onPress: () => {
+            setShowSkillModal(false);
+            if (skill.lessons.length > 0) {
+              handleLessonPress(skill, skill.lessons[0]);
+            }
+          }},
+          { text: 'Later', style: 'cancel' }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to enroll. Please try again.');
+    }
   };
 
-  const renderSkillCard = (skill: Skill) => {
-    const IconComponent = skill.icon;
+  const renderSkillCard = (skill: SkillPath) => {
+    const userData = userDataService.getCurrentUserData();
+    const skillProgress = userData?.skillsProgress[skill.id];
+    const progress = skillProgress?.progress || 0;
+    const completedLessons = skillProgress?.completedLessons || 0;
     
     return (
       <TouchableOpacity 
         key={skill.id} 
-        style={[styles.skillCard, !skill.unlocked && styles.lockedCard]}
-        onPress={() => handleStartSkill(skill)}
+        style={styles.skillCard}
+        onPress={() => handleSkillPress(skill)}
       >
         <View style={styles.skillHeader}>
           <View style={[styles.skillIcon, { backgroundColor: `${skill.color}15` }]}>
-            <IconComponent size={24} color={skill.color} />
-            {!skill.unlocked && (
-              <View style={styles.lockOverlay}>
-                <Lock size={16} color="#FFFFFF" />
-              </View>
-            )}
+            <Text style={[styles.skillEmoji, { color: skill.color }]}>{skill.icon}</Text>
           </View>
           <View style={styles.skillInfo}>
             <Text style={styles.skillName}>{skill.name}</Text>
-            <Text style={styles.skillLevel}>{skill.level}</Text>
+            <Text style={styles.skillCategory}>{skill.category}</Text>
+            <View style={styles.skillMeta}>
+              <View style={styles.difficultyBadge}>
+                <Text style={styles.difficultyText}>{skill.difficulty}</Text>
+              </View>
+              <Text style={styles.estimatedTime}>{skill.estimatedHours}h</Text>
+            </View>
           </View>
-          <View style={styles.skillProgress}>
-            <Text style={styles.progressText}>{skill.progress}%</Text>
+          <View style={styles.skillStats}>
+            <View style={styles.ratingContainer}>
+              <Star size={12} color="#F59E0B" fill="#F59E0B" />
+              <Text style={styles.rating}>{skill.rating}</Text>
+            </View>
+            <Text style={styles.enrolledCount}>{skill.enrolledCount.toLocaleString()} enrolled</Text>
           </View>
         </View>
         
         <Text style={styles.skillDescription}>{skill.description}</Text>
         
-        <View style={styles.skillMeta}>
-          <Text style={styles.skillLessons}>
-            {skill.completedLessons}/{skill.lessons} lessons
-          </Text>
-          <Text style={styles.skillTime}>{skill.estimatedTime}</Text>
-        </View>
-        
-        <ProgressBar 
-          progress={skill.progress} 
-          color={skill.color}
-          height={6}
-          showPercentage={false}
-        />
-        
-        {skill.prerequisites && skill.prerequisites.length > 0 && (
-          <View style={styles.prerequisites}>
-            <Text style={styles.prerequisitesText}>
-              Requires: {skill.prerequisites.join(', ')}
-            </Text>
+        {progress > 0 && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressText}>
+                {completedLessons}/{skill.lessons.length} lessons
+              </Text>
+              <Text style={styles.progressPercentage}>{Math.round(progress)}%</Text>
+            </View>
+            <ProgressBar 
+              progress={progress} 
+              color={skill.color}
+              height={6}
+              showPercentage={false}
+            />
           </View>
         )}
+        
+        <View style={styles.skillActions}>
+          {progress > 0 ? (
+            <TouchableOpacity style={[styles.continueButton, { backgroundColor: skill.color }]}>
+              <Play size={16} color="#FFFFFF" />
+              <Text style={styles.continueButtonText}>Continue</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.startButton}>
+              <Text style={styles.startButtonText}>Start Learning</Text>
+            </TouchableOpacity>
+          )}
+          
+          {skill.certificate && (
+            <View style={styles.certificateBadge}>
+              <Award size={12} color="#F59E0B" />
+              <Text style={styles.certificateText}>Certificate</Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
     );
   };
 
-  const renderInterviewQuestion = (question: InterviewQuestion) => {
-    const difficultyColors = {
-      easy: '#10B981',
-      medium: '#F59E0B',
-      hard: '#EF4444',
-    };
-
+  const renderSkillModal = () => {
+    if (!selectedSkill) return null;
+    
+    const userData = userDataService.getCurrentUserData();
+    const skillProgress = userData?.skillsProgress[selectedSkill.id];
+    const progress = skillProgress?.progress || 0;
+    const completedLessons = skillProgress?.completedLessons || 0;
+    
     return (
-      <TouchableOpacity 
-        key={question.id}
-        style={styles.questionCard}
-        onPress={() => handleInterviewQuestion(question)}
+      <Modal
+        visible={showSkillModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowSkillModal(false)}
       >
-        <View style={styles.questionHeader}>
-          <View style={styles.questionMeta}>
-            <View style={[styles.difficultyBadge, { backgroundColor: difficultyColors[question.difficulty] }]}>
-              <Text style={styles.difficultyText}>{question.difficulty}</Text>
-            </View>
-            <Text style={styles.categoryText}>{question.category}</Text>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{selectedSkill.name}</Text>
+            <TouchableOpacity onPress={() => setShowSkillModal(false)}>
+              <Text style={styles.closeButton}>Done</Text>
+            </TouchableOpacity>
           </View>
-        </View>
-        <Text style={styles.questionText}>{question.question}</Text>
-        <View style={styles.questionActions}>
-          <Text style={styles.practiceText}>Tap to practice</Text>
-          <Play size={16} color="#2563EB" />
-        </View>
-      </TouchableOpacity>
+          
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.skillDetailHeader}>
+              <View style={[styles.skillDetailIcon, { backgroundColor: `${selectedSkill.color}15` }]}>
+                <Text style={[styles.skillDetailEmoji, { color: selectedSkill.color }]}>
+                  {selectedSkill.icon}
+                </Text>
+              </View>
+              <View style={styles.skillDetailInfo}>
+                <Text style={styles.skillDetailName}>{selectedSkill.name}</Text>
+                <Text style={styles.skillDetailDescription}>{selectedSkill.description}</Text>
+                <View style={styles.skillDetailMeta}>
+                  <Text style={styles.skillDetailMetaText}>
+                    {selectedSkill.estimatedHours} hours • {selectedSkill.difficulty} • {selectedSkill.lessons.length} lessons
+                  </Text>
+                </View>
+              </View>
+            </View>
+            
+            {progress > 0 && (
+              <View style={styles.progressSection}>
+                <Text style={styles.progressSectionTitle}>Your Progress</Text>
+                <View style={styles.progressStats}>
+                  <Text style={styles.progressStatsText}>
+                    {completedLessons} of {selectedSkill.lessons.length} lessons completed
+                  </Text>
+                  <Text style={styles.progressStatsPercentage}>{Math.round(progress)}%</Text>
+                </View>
+                <ProgressBar 
+                  progress={progress} 
+                  color={selectedSkill.color}
+                  height={8}
+                  showPercentage={false}
+                />
+              </View>
+            )}
+            
+            <View style={styles.lessonsSection}>
+              <Text style={styles.lessonsSectionTitle}>Lessons</Text>
+              {selectedSkill.lessons.map((lesson, index) => {
+                const isCompleted = lesson.completed;
+                const isLocked = lesson.prerequisites && lesson.prerequisites.length > 0 && 
+                  !lesson.prerequisites.every(prereqId => {
+                    const prereqLesson = selectedSkill.lessons.find(l => l.id === prereqId);
+                    return prereqLesson?.completed;
+                  });
+                
+                return (
+                  <TouchableOpacity
+                    key={lesson.id}
+                    style={[styles.lessonItem, isLocked && styles.lockedLesson]}
+                    onPress={() => {
+                      setShowSkillModal(false);
+                      handleLessonPress(selectedSkill, lesson);
+                    }}
+                    disabled={isLocked}
+                  >
+                    <View style={styles.lessonNumber}>
+                      {isCompleted ? (
+                        <CheckCircle size={20} color="#10B981" />
+                      ) : isLocked ? (
+                        <Lock size={20} color="#9CA3AF" />
+                      ) : (
+                        <Text style={styles.lessonNumberText}>{index + 1}</Text>
+                      )}
+                    </View>
+                    <View style={styles.lessonContent}>
+                      <Text style={[styles.lessonTitle, isLocked && styles.lockedText]}>
+                        {lesson.title}
+                      </Text>
+                      <Text style={[styles.lessonDescription, isLocked && styles.lockedText]}>
+                        {lesson.description}
+                      </Text>
+                      <View style={styles.lessonMeta}>
+                        <Text style={[styles.lessonDuration, isLocked && styles.lockedText]}>
+                          {lesson.duration} min
+                        </Text>
+                        <Text style={[styles.lessonXP, isLocked && styles.lockedText]}>
+                          {lesson.xp} XP
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.lessonAction}>
+                      {isCompleted ? (
+                        <Text style={styles.completedText}>✓</Text>
+                      ) : !isLocked ? (
+                        <Play size={16} color={selectedSkill.color} />
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            
+            {progress === 0 && (
+              <TouchableOpacity 
+                style={[styles.enrollButton, { backgroundColor: selectedSkill.color }]}
+                onPress={() => handleEnrollInSkill(selectedSkill)}
+              >
+                <Text style={styles.enrollButtonText}>Enroll in Course</Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     );
   };
 
@@ -557,7 +395,7 @@ export default function SkillsScreen() {
         <View style={styles.achievementsList}>
           <View style={styles.achievementItem}>
             <Award size={20} color="#F59E0B" />
-            <Text style={styles.achievementText}>JavaScript Master - Completed 25 lessons</Text>
+            <Text style={styles.achievementText}>Python Master - Completed 6 lessons</Text>
           </View>
           <View style={styles.achievementItem}>
             <Zap size={20} color="#10B981" />
@@ -565,7 +403,7 @@ export default function SkillsScreen() {
           </View>
           <View style={styles.achievementItem}>
             <Star size={20} color="#8B5CF6" />
-            <Text style={styles.achievementText}>Interview Ready - Practiced 10 questions</Text>
+            <Text style={styles.achievementText}>Quick Learner - Completed lesson in under 20 min</Text>
           </View>
         </View>
       </View>
@@ -584,6 +422,16 @@ export default function SkillsScreen() {
       </View>
     </ScrollView>
   );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading skills...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -613,8 +461,21 @@ export default function SkillsScreen() {
       </View>
 
       {/* Content */}
-      {selectedTab === 'skills' && (
+      {selectedTab === 'discover' && (
         <ScrollView style={styles.content}>
+          {/* Search */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Search size={20} color="#6B7280" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search skills..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+          </View>
+
           {/* Categories */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
             {categories.map((category) => (
@@ -645,64 +506,33 @@ export default function SkillsScreen() {
         </ScrollView>
       )}
 
-      {selectedTab === 'interview' && (
+      {selectedTab === 'learning' && (
         <ScrollView style={styles.content}>
-          <View style={styles.interviewHeader}>
-            <Text style={styles.sectionTitle}>Interview Preparation</Text>
-            <TouchableOpacity style={styles.randomButton} onPress={getRandomQuestion}>
-              <Text style={styles.randomButtonText}>Random Question</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.questionsGrid}>
-            {interviewQuestions.map(renderInterviewQuestion)}
+          <Text style={styles.sectionTitle}>Continue Learning</Text>
+          <View style={styles.skillsGrid}>
+            {skillPaths
+              .filter(skill => {
+                const userData = userDataService.getCurrentUserData();
+                const skillProgress = userData?.skillsProgress[skill.id];
+                return skillProgress && skillProgress.progress > 0 && skillProgress.progress < 100;
+              })
+              .map(renderSkillCard)}
           </View>
         </ScrollView>
       )}
 
       {selectedTab === 'progress' && renderProgressTab()}
 
-      {/* Interview Question Modal */}
-      <Modal
-        visible={showQuestionModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowQuestionModal(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Interview Question</Text>
-            <TouchableOpacity onPress={() => setShowQuestionModal(false)}>
-              <Text style={styles.closeButton}>Done</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {currentQuestion && (
-            <ScrollView style={styles.modalContent}>
-              <View style={styles.questionDetails}>
-                <Text style={styles.modalQuestion}>{currentQuestion.question}</Text>
-                
-                <View style={styles.questionInfo}>
-                  <Text style={styles.infoLabel}>Category: {currentQuestion.category}</Text>
-                  <Text style={styles.infoLabel}>Difficulty: {currentQuestion.difficulty}</Text>
-                </View>
+      {/* Skill Detail Modal */}
+      {renderSkillModal()}
 
-                <Text style={styles.tipsTitle}>Tips for answering:</Text>
-                {currentQuestion.tips.map((tip, index) => (
-                  <Text key={index} style={styles.tipText}>• {tip}</Text>
-                ))}
-
-                {currentQuestion.sampleAnswer && (
-                  <View style={styles.sampleAnswer}>
-                    <Text style={styles.sampleTitle}>Sample Answer:</Text>
-                    <Text style={styles.sampleText}>{currentQuestion.sampleAnswer}</Text>
-                  </View>
-                )}
-              </View>
-            </ScrollView>
-          )}
-        </SafeAreaView>
-      </Modal>
+      {/* Lesson Modal */}
+      <LessonModal
+        visible={showLessonModal}
+        onClose={() => setShowLessonModal(false)}
+        lesson={selectedLesson}
+        onComplete={handleLessonComplete}
+      />
     </SafeAreaView>
   );
 }
@@ -711,6 +541,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
   },
   header: {
     flexDirection: 'row',
@@ -774,6 +614,26 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
+  searchContainer: {
+    paddingVertical: 16,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#111827',
+    marginLeft: 12,
+  },
   categoriesContainer: {
     paddingVertical: 16,
   },
@@ -813,9 +673,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  lockedCard: {
-    opacity: 0.6,
-  },
   skillHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -827,41 +684,67 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
+    marginRight: 12,
   },
-  lockOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  skillEmoji: {
+    fontSize: 24,
   },
   skillInfo: {
     flex: 1,
-    marginLeft: 12,
   },
   skillName: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#111827',
   },
-  skillLevel: {
+  skillCategory: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
     textTransform: 'capitalize',
+    marginTop: 2,
   },
-  skillProgress: {
+  skillMeta: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 4,
   },
-  progressText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Bold',
-    color: '#2563EB',
+  difficultyBadge: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginRight: 8,
+  },
+  difficultyText: {
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    textTransform: 'capitalize',
+  },
+  estimatedTime: {
+    fontSize: 10,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF',
+  },
+  skillStats: {
+    alignItems: 'flex-end',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  rating: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#F59E0B',
+    marginLeft: 4,
+  },
+  enrolledCount: {
+    fontSize: 10,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF',
   },
   skillDescription: {
     fontSize: 14,
@@ -869,113 +752,249 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 12,
   },
-  skillMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  progressContainer: {
     marginBottom: 12,
   },
-  skillLessons: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#9CA3AF',
-  },
-  skillTime: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#9CA3AF',
-  },
-  prerequisites: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  prerequisitesText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#EF4444',
-  },
-  interviewHeader: {
+  progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    marginBottom: 6,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
-    color: '#111827',
-  },
-  randomButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  randomButtonText: {
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
-  },
-  questionsGrid: {
-    paddingBottom: 20,
-  },
-  questionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  questionHeader: {
-    marginBottom: 12,
-  },
-  questionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  difficultyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  difficultyText: {
-    fontSize: 10,
-    fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
-    textTransform: 'uppercase',
-  },
-  categoryText: {
+  progressText: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
-    textTransform: 'capitalize',
   },
-  questionText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: '#111827',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  questionActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  practiceText: {
+  progressPercentage: {
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#2563EB',
   },
-  progressContainer: {
+  skillActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  continueButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  continueButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+    marginLeft: 6,
+  },
+  startButton: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  startButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+  },
+  certificateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  certificateText: {
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+    color: '#D97706',
+    marginLeft: 4,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
+  },
+  closeButton: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#2563EB',
+  },
+  modalContent: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  skillDetailHeader: {
+    flexDirection: 'row',
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  skillDetailIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  skillDetailEmoji: {
+    fontSize: 32,
+  },
+  skillDetailInfo: {
+    flex: 1,
+  },
+  skillDetailName: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  skillDetailDescription: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  skillDetailMeta: {
+    marginTop: 4,
+  },
+  skillDetailMetaText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF',
+  },
+  progressSection: {
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  progressSectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  progressStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressStatsText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+  },
+  progressStatsPercentage: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#2563EB',
+  },
+  lessonsSection: {
+    paddingVertical: 20,
+  },
+  lessonsSectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  lessonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+  },
+  lockedLesson: {
+    opacity: 0.5,
+  },
+  lessonNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  lessonNumberText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+  },
+  lessonContent: {
+    flex: 1,
+  },
+  lessonTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  lessonDescription: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  lessonMeta: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  lessonDuration: {
+    fontSize: 10,
+    fontFamily: 'Inter-Regular',
+    color: '#9CA3AF',
+  },
+  lessonXP: {
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+    color: '#F59E0B',
+  },
+  lockedText: {
+    color: '#9CA3AF',
+  },
+  lessonAction: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completedText: {
+    fontSize: 16,
+    color: '#10B981',
+  },
+  enrollButton: {
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  enrollButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
   },
   progressHeader: {
     flexDirection: 'row',
@@ -1037,8 +1056,13 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 20,
   },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
+    marginBottom: 16,
+  },
   achievementsList: {
-    marginTop: 16,
     gap: 12,
   },
   achievementItem: {
@@ -1063,84 +1087,5 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 8,
     marginBottom: 12,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
-    color: '#111827',
-  },
-  closeButton: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#2563EB',
-  },
-  modalContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  questionDetails: {
-    paddingVertical: 20,
-  },
-  modalQuestion: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: '#111827',
-    lineHeight: 26,
-    marginBottom: 16,
-  },
-  questionInfo: {
-    flexDirection: 'row',
-    gap: 20,
-    marginBottom: 20,
-  },
-  infoLabel: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#6B7280',
-    textTransform: 'capitalize',
-  },
-  tipsTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  tipText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: '#374151',
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  sampleAnswer: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
-  },
-  sampleTitle: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: '#0369A1',
-    marginBottom: 8,
-  },
-  sampleText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: '#0F172A',
-    lineHeight: 20,
   },
 });

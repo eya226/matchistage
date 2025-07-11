@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { X, Play, CheckCircle, Award, ArrowRight, ArrowLeft, Code, BookOpen, HelpCircle, Lightbulb } from 'lucide-react-native';
+import { X, Play, CircleCheck as CheckCircle, Award, ArrowRight, ArrowLeft, Code, BookOpen, CircleHelp as HelpCircle, Lightbulb } from 'lucide-react-native';
 import { Lesson, LessonContent } from '@/services/skillsLearningService';
 
 interface LessonModalProps {

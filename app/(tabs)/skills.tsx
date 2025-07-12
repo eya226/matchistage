@@ -135,10 +135,17 @@ export default function SkillsScreen() {
       // Refresh data
       await loadSkillsData();
       
+      // Show celebration animation
+      const xpEarned = selectedLesson.xp;
+      const isLevelUp = score >= 90;
+      
       Alert.alert(
-        'Lesson Complete! 🎉',
-        `You earned ${selectedLesson.xp} XP and scored ${score}%!\n\nKeep up the great work!`,
-        [{ text: 'Continue' }]
+        isLevelUp ? 'Level Up! 🎉' : 'Lesson Complete! ✨',
+        `You earned ${xpEarned} XP and scored ${score}%!\n\n${isLevelUp ? 'Congratulations on leveling up!' : 'Keep up the great work!'}`,
+        [
+          { text: 'Continue Learning', style: 'default' },
+          { text: 'View Progress', onPress: () => setSelectedTab('progress') }
+        ]
       );
     } catch (error) {
       Alert.alert('Error', 'Failed to save progress. Please try again.');

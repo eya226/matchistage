@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
 import { X, FileText, Send, Clock, CircleCheck as CheckCircle, Sparkles, Upload, File, Trash2 } from 'lucide-react-native';
+import { aiService } from '@/services/aiService';
+import { userDataService } from '@/services/userDataService';
 
 interface QuickApplyModalProps {
   visible: boolean;
@@ -26,32 +28,65 @@ export default function QuickApplyModal({ visible, onClose, job, onApply }: Quic
   const generateAICoverLetter = async () => {
     setIsGeneratingCoverLetter(true);
     
-    // Simulate AI generation
-    setTimeout(() => {
-      const aiGeneratedLetter = `Dear Hiring Manager,
+    try {
+      // Get user data for CV context
+      const userData = userDataService.getCurrentUserData();
+      if (!userData) {
+        Alert.alert('Error', 'Please complete your profile first');
+        setIsGeneratingCoverLetter(false);
+        return;
+      }
 
-I am writing to express my strong interest in the ${job.title} position at ${job.company}. As a passionate software engineering student with hands-on experience in modern technologies, I am excited about the opportunity to contribute to your team.
+      // Create mock CV data from user profile
+      const cvData = {
+        personalInfo: {
+          name: userData.profileData.name,
+          email: userData.profileData.email,
+          location: userData.profileData.location,
+        },
+        summary: `Motivated ${userData.profileData.major} student with strong foundation in ${userData.profileData.skills.slice(0, 3).join(', ')}.`,
+        education: [{
+          degree: `Bachelor's in ${userData.profileData.major}`,
+          university: userData.profileData.university,
+          graduationYear: '2025',
+        }],
+        experience: userData.profileData.experience.map(exp => ({
+          title: exp.split(' at ')[0] || 'Developer',
+          company: exp.split(' at ')[1]?.split(' (')[0] || 'Company',
+          duration: '3 months',
+          description: ['Developed software solutions', 'Collaborated with team members']
+        })),
+        skills: {
+          technical: userData.profileData.skills,
+          soft: ['Problem Solving', 'Communication', 'Team Work']
+        },
+        projects: [],
+        achievements: []
+      };
 
-My technical background includes proficiency in ${job.skills?.slice(0, 3).join(', ') || 'JavaScript, React, and Python'}, which aligns perfectly with the requirements for this role. Through my academic projects and internship experience, I have developed strong problem-solving skills and the ability to work effectively in collaborative environments.
+      // Create job description object
+      const jobDescription = {
+        title: job.title,
+        company: job.company,
+        requirements: job.skills || [],
+        skills: job.skills || [],
+        description: job.description || ''
+      };
 
-What particularly attracts me to ${job.company} is your commitment to innovation and excellence in the technology sector. I am eager to bring my enthusiasm for learning and my technical skills to contribute to your team's success while gaining valuable industry experience.
-
-I am available for an interview at your convenience and look forward to discussing how my skills and passion can contribute to ${job.company}'s continued success.
-
-Thank you for considering my application.
-
-Best regards,
-Eya Hamdi`;
-
-      setCoverLetter(aiGeneratedLetter);
-      setIsGeneratingCoverLetter(false);
+      // Generate cover letter using AI service
+      const generatedLetter = await aiService.generateCoverLetter(cvData, jobDescription);
+      setCoverLetter(generatedLetter);
       
       Alert.alert(
         'Cover Letter Generated! ✨',
-        'AI has generated a personalized cover letter based on the job requirements. You can edit it before submitting.',
+        'AI has generated a personalized cover letter based on your profile and the job requirements. You can edit it before submitting.',
         [{ text: 'Great!' }]
       );
-    }, 2000);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to generate cover letter. Please try again.');
+    } finally {
+      setIsGeneratingCoverLetter(false);
+    }
   };
 
   const handleResumeUpload = () => {

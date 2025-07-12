@@ -145,16 +145,44 @@ export const dataService = {
   async getJobs(): Promise<Job[]> {
     try {
       const realJobs = await realJobsService.searchJobs({
-        location: 'Tunisia',
+        location: 'Global',
         experienceLevel: 'internship'
       });
       
       return realJobs.map((realJob, index) => convertRealJobToJob(realJob, index));
     } catch (error) {
       console.error('Error fetching real jobs:', error);
-      // Fallback to mock data if real service fails
-      return [];
+      // Return sample jobs if service fails
+      return this.getSampleJobs();
     }
+  },
+
+  // Sample jobs for fallback
+  getSampleJobs(): Job[] {
+    return [
+      {
+        id: 1,
+        title: 'Frontend Developer Intern',
+        company: 'TechCorp',
+        location: 'Tunis, Tunisia',
+        salary: '1500-2000 TND/month',
+        type: 'Summer Internship',
+        duration: '3 months',
+        match: 95,
+        logo: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
+        banner: 'https://images.pexels.com/photos/3182773/pexels-photo-3182773.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&fit=crop',
+        postedTime: '2 days ago',
+        skills: ['React', 'JavaScript', 'CSS', 'HTML'],
+        benefits: ['Health Insurance', 'Mentorship', 'Learning Budget'],
+        description: 'Join our frontend team to build amazing user interfaces using React and modern web technologies.',
+        teamSize: '50-100',
+        rating: 4.8,
+        source: 'linkedin',
+        requirements: ['React experience', 'JavaScript proficiency', 'CSS knowledge'],
+        applicationDeadline: 'March 31, 2024',
+        remote: false
+      }
+    ];
   },
 
   async searchJobs(query: string, filters?: any): Promise<Job[]> {
@@ -169,7 +197,7 @@ export const dataService = {
       return realJobs.map((realJob, index) => convertRealJobToJob(realJob, index));
     } catch (error) {
       console.error('Error searching jobs:', error);
-      return [];
+      return this.getSampleJobs();
     }
   },
 

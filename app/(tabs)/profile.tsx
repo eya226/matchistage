@@ -6,6 +6,7 @@ import { dataService, UserProfile } from '@/services/dataService';
 import ProgressBar from '@/components/ProgressBar';
 import Badge from '@/components/Badge';
 import { userDataService } from '@/services/userDataService';
+import CVGeneratorModal from '@/components/CVGeneratorModal';
 
 export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -16,6 +17,7 @@ export default function ProfileScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editField, setEditField] = useState<string>('');
   const [editValue, setEditValue] = useState<string>('');
+  const [showCVGenerator, setShowCVGenerator] = useState(false);
 
   const loadProfileData = async () => {
     try {
@@ -115,7 +117,7 @@ export default function ProfileScreen() {
   };
 
   const handleDownloadResume = () => {
-    Alert.alert('Download Resume', 'Resume download started...\n\nEya_Hamdi_Resume.pdf');
+    setShowCVGenerator(true);
   };
 
   if (loading || !userProfile) {
@@ -312,7 +314,7 @@ export default function ProfileScreen() {
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.actionButton} onPress={handleDownloadResume}>
             <Download size={16} color="#2563EB" />
-            <Text style={styles.actionText}>Download Resume</Text>
+            <Text style={styles.actionText}>Generate CV</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={handleShareProfile}>
             <Share size={16} color="#2563EB" />
@@ -496,6 +498,12 @@ export default function ProfileScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* CV Generator Modal */}
+      <CVGeneratorModal
+        visible={showCVGenerator}
+        onClose={() => setShowCVGenerator(false)}
+      />
     </SafeAreaView>
   );
 }

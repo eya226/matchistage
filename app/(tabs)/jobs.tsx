@@ -5,7 +5,7 @@ import { MapPin, Clock, DollarSign, Heart, X, ArrowUp, Briefcase, Users, Star, E
 import { dataService, Job } from '@/services/dataService';
 import { storageService } from '@/services/storageService';
 import QuickApplyModal from '@/components/QuickApplyModal';
-import JobDetailsModal from '@/components/JobDetailsModal';
+import JobDetailsModal from '../../components/JobDetailsModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_HEIGHT = SCREEN_HEIGHT * 0.75;
